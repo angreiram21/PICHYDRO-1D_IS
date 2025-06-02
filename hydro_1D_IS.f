@@ -1133,19 +1133,15 @@ c       write (156,1080) npart,npartz,nparp,nparpz
 c       write (156,1190)
       if (nparpz.ne.npartz) nparpz=npartz
       rewind 100
-      read (100,1390) alpha
-c       write (156,1220) alpha
-      read (100,1390) alpha
-c       write (156,1220) alpha
-      read (100,1520) epsilon00,b0,ap,at
+      read (100,1520) epsilon00
+      read (100,1520) b0
+      read (100,1520) ap
+      read (100,1520) at
       read (100,1240) rap00
-      read (100,1250) dxv,dyv,dzv
-c       write (156,1230) dxv,dyv,dzv
-      read (100,1390) alpha
-c       write (156,1220) alpha
-      read (100,1390) alpha
-      read (100,1390) alpha
-c       write (156,1190)
+      read (100,1250) dxv
+      read (100,1250) dyv
+      read (100,1250) dzv
+
       nparp2=nparp**2 ! nparp2=9
 c     To get correct cell sizes ???????
       dxdydv=dxv*dyv*dzv ! dxdydv=0.2596940720 fm3
@@ -2013,9 +2009,15 @@ c
  1220 format ('|',2x,'INPUT:',1x,18a4,1x,'|')
  1230 format ('|',2x,'INPUT:',22x,'dxv=',f5.3,' dyv=',f5.3,' dzv=',f5.3s
      1 ,23x,'|')
- 1520 format (26x,f11.4,3x,f9.4,19x,f5.0,1x,f5.0)
+ 1520 format (f11.4)
+ 1521 format (f9.4)
+ 1522 format (f5.0)
+ 1523 format (f5.0)
+
  1240 format (10x,f12.5)
- 1250 format (15x,f13.6,5x,f13.6,5x,f13.6)
+ 1250 format (f13.6)
+ 1251 format (f13.6)
+ 1252 format (f13.6)
  1260 format ('|',19x,'Number of lines of input file fort.100=',i5,19x,'
      1|')
  1270 format ('|',12x,'Original imin=',i2,' imid=',i2,' imax=',i2,'  jmi

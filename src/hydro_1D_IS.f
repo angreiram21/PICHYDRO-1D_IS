@@ -69,7 +69,7 @@ c
       ibl(i)=' '
    10 continue
 c                  READING FROM INHYDRO FILE
-      infile='inhydro'
+      infile='../input/inhydro'
       linfile=mylenc(infile)
       open (155,file=infile(1:linfile),iostat=ios,status='old',err=190)
       rewind 155
@@ -1132,6 +1132,7 @@ c       write (156,1190)
 c       write (156,1080) npart,npartz,nparp,nparpz
 c       write (156,1190)
       if (nparpz.ne.npartz) nparpz=npartz
+      open(unit=100,file='../input/fort.100')
       rewind 100
       read (100,1520) epsilon00
       read (100,1520) b0
@@ -1377,6 +1378,7 @@ c      1 ,k1max,kwidth
       kadjst=kmid-k1mid
 c       write (156,1280) iadjst,jadjst,kadjst
 c       write (156,1190)
+      write(*,*) k1min,k1max, k1mid,kmin,kmax,kmid,kadjst,kwidth/2,jbar
       if (k1mid+kadjst+kwidth/2+2.ge.k1min) go to 920
 c     I am not sure that xmom(ijk), ymom(ijk) will have any effect
 c     even if these are given non-zero
@@ -3759,31 +3761,33 @@ c
       diff2=secnds(start)
 C     ------------------------------------------------------------------
 C       CHECKING FOR ENERGY, MOMEMTUM AND BARYON CHARGE CONSERVATION
-c      sumN0=0
-c      sumT00=0
-c      sumT0Z=0
-c      sumpress=0
-c      sumwijk=0
-c      do i=1,ibar
-c      do j=1,jbar
-c      do k=1,kbar
-c      ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-c      sumN0=sumN0+capn(ijk)
-c      sumT00=sumT00+e(ijk)
-c      sumT0Z=sumT0Z+zmom(ijk)
-c      sumpress=sumpress+p(ijk)
-c      sumwijk=sumwijk+abs(w(ijk))
-c      enddo
-c      enddo
-c      enddo
-c      write (*,*) ' checking for correct units in cyc:',ncyc
-c      write (*,*) 'Before calling subroutine phase1: '
-c      write (*,*) 'T00 [MeV*fm-3], T0Z [MeV*fm-3], T0Y [MeV*fm-3]'
-c      write (*,*) 'T0X [MeV*fm-3], N0 [fm-3], press [MeV*fm-3]'
-c      write (*,*) ''
-c      write(*,*) 'sumT00*V=',sumT00*dxdydz,
-c     1 'sumT0Z*V=',sumT0Z*dxdydz,'sumpress*V=',sumpress*dxdydz,
-c     2 'sumN0*V=',sumN0*dxdydz,'sum(abs(wijk))=', sumwijk
+      sumN0=0
+      sumT00=0
+      sumT0Z=0
+      sumpress=0
+      sumwijk=0
+      do i=1,ibar
+      do j=1,jbar
+      do k=1,kbar
+      ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
+      sumN0=sumN0+capn(ijk)
+      sumT00=sumT00+e(ijk)
+      sumT0Z=sumT0Z+zmom(ijk)
+      sumpress=sumpress+p(ijk)
+      sumwijk=sumwijk+abs(w(ijk))
+      enddo
+      enddo
+      enddo
+      write (*,*) '----------------------------------------------------'
+      write (*,*) 'cyc = ',ncyc
+      write (*,*) 'Before calling subroutine phase1: '
+      write (*,*) 'T00 [MeV*fm-3], T0Z [MeV*fm-3], T0Y [MeV*fm-3]'
+      write (*,*) 'T0X [MeV*fm-3], N0 [fm-3], press [MeV*fm-3]'
+      write (*,*) ''
+      write(*,*) 'sumT00*V=',sumT00*dxdydz,
+     1 'sumT0Z*V=',sumT0Z*dxdydz,'sumpress*V=',sumpress*dxdydz,
+     2 'sumN0*V=',sumN0*dxdydz,'sum(abs(wijk))=', sumwijk
+      write (*,*) '----------------------------------------------------'
 
 c                STORING THE DATA OF THE LAST CYCLE  (ncyc-1)
 c      rewind 334
@@ -3883,30 +3887,32 @@ c     and pressure is given in MeV/fm3 b is given in MeV*fm-3, cmom and
 c     c in MeV2*fm-6
 C     ------------------------------------------------------------------
 C       CHECKING FOR ENERGY, MOMEMTUM AND BARYON CHARGE CONSERVATION
-c      sumN0=0
-c      sumT00=0
-c      sumT0Z=0
-c      sumpress=0
-c      sumwijk=0
-c      do i=1,ibar
-c      do j=1,jbar
-c      do k=1,kbar
-c      ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-c      sumN0=sumN0+capn(ijk)
-c      sumT00=sumT00+e(ijk)
-c      sumT0Z=sumT0Z+zmom(ijk)
-c      sumpress=sumpress+p(ijk)
-c      sumwijk=sumwijk+abs(w(ijk))
-c      enddo
-c      enddo
-c      enddo
-c      write (*,*) 'checking for correct units in cyc:',ncyc
-c      write (*,*) 'After calling subroutine phase1 and starting phase2:'
-c      write (*,*) 'T00 [MeV], T0Z [MeV], T0Y [MeV]'
-c      write (*,*) 'T0X [MeV], N0 [], press [MeV*fm-3]'
-c      write (*,*) ''
-c      write(*,*) 'sumT00*V=',sumT00,'sumT0Z*V=',sumT0Z,'sumpress*V=',
-c     1 sumpress*dxdydz,'sumN0*V=',sumN0,'sum(abs(wijk))=', sumwijk
+      sumN0=0
+      sumT00=0
+      sumT0Z=0
+      sumpress=0
+      sumwijk=0
+      do i=1,ibar
+      do j=1,jbar
+      do k=1,kbar
+      ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
+      sumN0=sumN0+capn(ijk)
+      sumT00=sumT00+e(ijk)
+      sumT0Z=sumT0Z+zmom(ijk)
+      sumpress=sumpress+p(ijk)
+      sumwijk=sumwijk+abs(w(ijk))
+      enddo
+      enddo
+      enddo
+      write (*,*) '----------------------------------------------------'
+      write (*,*) 'cyc = ',ncyc
+      write (*,*) 'After calling subroutine phase1 and starting phase2:'
+      write (*,*) 'T00 [MeV], T0Z [MeV], T0Y [MeV]'
+      write (*,*) 'T0X [MeV], N0 [], press [MeV*fm-3]'
+      write (*,*) ''
+      write(*,*) 'sumT00*V=',sumT00,'sumT0Z*V=',sumT0Z,'sumpress*V=',
+     1 sumpress*dxdydz,'sumN0*V=',sumN0,'sum(abs(wijk))=', sumwijk
+      write (*,*) '----------------------------------------------------'
 
 c     ------------------------------------------------------------------
 c
@@ -3963,30 +3969,33 @@ c       if (kdebug.ne.0) write (156,*) 'phase 2'
 
 C     ------------------------------------------------------------------
 C       CHECKING FOR ENERGY, MOMEMTUM AND BARYON CHARGE CONSERVATION
-c      sumN0=0
-c      sumT00=0
-c      sumT0Z=0
-c      sumpress=0
-c      sumwijk=0
-c      do i=1,ibar
-c      do j=1,jbar
-c      do k=1,kbar
-c      ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-c      sumN0=sumN0+capn(ijk)
-c      sumT00=sumT00+e(ijk)
-c      sumT0Z=sumT0Z+zmom(ijk)
-c      sumpress=sumpress+p(ijk)
-c      sumwijk=sumwijk+abs(w(ijk))
-c      enddo
-c      enddo
-c      enddo
-c      write (*,*) 'checking for correct units in cyc:',ncyc
-c      write (*,*) 'After calling subroutine phase2 and starting phase 3'
-c      write (*,*) 'T00 [MeV], T0Z [MeV], T0Y [MeV]'
-c      write (*,*) 'T0X [MeV], N0 [], press [MeV*fm-3]'
-c      write (*,*) ''
-c      write(*,*) 'sumT00*V=',sumT00,'sumT0Z*V=',sumT0Z,'sumpress*V=',
-c     1 sumpress*dxdydz,'sumN0*V=',sumN0,'sum(abs(wijk))=', sumwijk
+      sumN0=0
+      sumT00=0
+      sumT0Z=0
+      sumpress=0
+      sumwijk=0
+      do i=1,ibar
+      do j=1,jbar
+      do k=1,kbar
+      ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
+      sumN0=sumN0+capn(ijk)
+      sumT00=sumT00+e(ijk)
+      sumT0Z=sumT0Z+zmom(ijk)
+      sumpress=sumpress+p(ijk)
+      sumwijk=sumwijk+abs(w(ijk))
+      enddo
+      enddo
+      enddo
+      write (*,*) '----------------------------------------------------'
+      write (*,*) 'cyc = ',ncyc
+      write (*,*) 'After calling subroutine phase2 and starting phase 3'
+      write (*,*) 'T00 [MeV], T0Z [MeV], T0Y [MeV]'
+      write (*,*) 'T0X [MeV], N0 [], press [MeV*fm-3]'
+      write (*,*) ''
+      write(*,*) 'sumT00*V=',sumT00,'sumT0Z*V=',sumT0Z,'sumpress*V=',
+     1 sumpress*dxdydz,'sumN0*V=',sumN0,'sum(abs(wijk))=', sumwijk
+      write (*,*) '----------------------------------------------------'
+
 c     ------------------------------------------------------------------
       diff4=secnds(start)
       timph2=timph2+diff4-diff3
@@ -4041,33 +4050,35 @@ c          ________________________ phase 3 _________________________
 c
 C     ------------------------------------------------------------------
 C       CHECKING FOR ENERGY, MOMEMTUM AND BARYON CHARGE CONSERVATION
-c      sumN0=0
-c      sumT00=0
-c      sumT0Z=0
-c      sumpress=0
-c      sumwijk=0
-c      do i=1,ibar
-c      do j=1,jbar
-c      do k=1,kbar
-c      ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-c      sumN0=sumN0+capn(ijk)
-c      sumT00=sumT00+e(ijk)
-c      sumT0Z=sumT0Z+zmom(ijk)
-c      sumpress=sumpress+p(ijk)
-c      sumwijk=sumwijk+abs(w(ijk))
-c      enddo
-c      enddo
-c      enddo
-c      write (*,*) 'checking for correct units in cyc:',ncyc
-c      write (*,*) 'After calling subroutine phase3: '
-c      write (*,*) 'T00 [MeV*fm-3], T0Z [MeV*fm-3], T0Y [MeV*fm-3]'
-c      write (*,*) 'T0X [MeV*fm-3], N0 [fm-3], press [MeV*fm-3]'
-c      write (*,*) ''
-c      write(*,*) 'sumT00*V=',sumT00*dxdydz,
-c     1 'sumT0Z*V=',sumT0Z*dxdydz,'sumpress*V=',sumpress*dxdydz,
-c     2 'sumN0*V=',sumN0*dxdydz,'sum(abs(wijk))=', sumwijk,'sumchem',
-c     3 sumchem,'sumtemp',sumtemp,'sumentro',sumentro,nlpc
-c      write(*,*) 'TNC3699',ktnc
+      sumN0=0
+      sumT00=0
+      sumT0Z=0
+      sumpress=0
+      sumwijk=0
+      do i=1,ibar
+      do j=1,jbar
+      do k=1,kbar
+      ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
+      sumN0=sumN0+capn(ijk)
+      sumT00=sumT00+e(ijk)
+      sumT0Z=sumT0Z+zmom(ijk)
+      sumpress=sumpress+p(ijk)
+      sumwijk=sumwijk+abs(w(ijk))
+      enddo
+      enddo
+      enddo
+      write (*,*) '----------------------------------------------------'
+      write (*,*) 'cyc = ',ncyc
+      write (*,*) 'After calling subroutine phase3: '
+      write (*,*) 'T00 [MeV*fm-3], T0Z [MeV*fm-3], T0Y [MeV*fm-3]'
+      write (*,*) 'T0X [MeV*fm-3], N0 [fm-3], press [MeV*fm-3]'
+      write (*,*) ''
+      write(*,*) 'sumT00*V=',sumT00*dxdydz,
+     1 'sumT0Z*V=',sumT0Z*dxdydz,'sumpress*V=',sumpress*dxdydz,
+     2 'sumN0*V=',sumN0*dxdydz,'sum(abs(wijk))=', sumwijk,'sumchem',
+     3 sumchem,'sumtemp',sumtemp,'sumentro',sumentro,nlpc
+      write(*,*) 'TNC3699',ktnc
+      write (*,*) '----------------------------------------------------'
 c     ------------------------------------------------------------------
 c
       call plane
@@ -5174,8 +5185,8 @@ c     References:
      &			 emin_big ,emax_big ,nmin_big ,nmax_big,
      &        	         emin_small,emax_small,nmin_small,nmax_small
 
-      open(unit=51,file='eos/chiraleos.dat')
-      open(unit=52,file='eos/chiralsmall.dat')
+      open(unit=51,file='../eos/chiraleos.dat')
+      open(unit=52,file='../eos/chiralsmall.dat')
 
       n0 = 0.15d0 ! fm-3
       e0 = 146d0 ! MeV/fm3

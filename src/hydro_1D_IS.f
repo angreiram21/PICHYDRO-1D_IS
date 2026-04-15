@@ -45,7 +45,8 @@ c
       common /newcrp/ entot, dentot, tempav, numcll
       common /idnt/ ident(8)
       common /pscm2/ cycen, istop, isume
-      common /corneliuss/ totenercornelius,totbarcornelius
+      common /corneliuss/ totenercornelius,totpxcornelius,
+     1 totpycornelius,totpzcornelius,totbarcornelius
 
       dimension ibl(80), iss(20), isr(12), isu(13)
       data isr /'I','N','P','U','T',' ','f','i','l','e',':',' '/
@@ -62,6 +63,9 @@ c  ______
 c
 
       totenercornelius=0.
+      totpxcornelius=0.
+      totpycornelius=0.
+      totpzcornelius=0.
       totbarcornelius=0.
       nevent=-1
       kresrt=0
@@ -2735,12 +2739,13 @@ c
       INTEGER :: Nambi, Ndisc,Nsurf
       INTEGER :: NCornCallCycle, NCornSurfCycle, NCornSkipCycle
       INTEGER :: NCornInvalidCycle
-      INTEGER :: IProgLen, IProgFill, ip
+      INTEGER :: IProgLen, IProgFill, ip, ITermCols
       LOGICAL :: has_cross_pre, has_cross_post, cube_valid
       REAL*8 ProgFrac, ProgPerc
-      CHARACTER*42 ProgBar
+      CHARACTER*122 ProgBar
       CHARACTER*5 EscGreen
       CHARACTER*4 EscReset
+      CHARACTER*16 SCols
       common /chktsm/ sumchem,sumtemp,sumentro,nlpc
       common /plcm1/ aa1(91627237)
       common /plcm2/ aa2(91627237)
@@ -2815,7 +2820,8 @@ c
       common /dmisca/ adens(300,700), eedns(300,700), aplot(300,700),
      1 bplot(300,700), cplot(300,700)
       common /miscnw/ cnfst, numfst
-      common /corneliuss/ totenercornelius,totbarcornelius
+      common /corneliuss/ totenercornelius,totpxcornelius,
+     1 totpycornelius,totpzcornelius,totbarcornelius
       dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
      1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233)
      
@@ -4160,11 +4166,24 @@ C       CHECKING FOR ENERGY, MOMEMTUM AND BARYON CHARGE CONSERVATION
       if (icysum.gt.0) ProgFrac=dfloat(ncyc)/dfloat(icysum)
       if (ProgFrac.lt.0.d0) ProgFrac=0.d0
       if (ProgFrac.gt.1.d0) ProgFrac=1.d0
-      IProgLen=40
+      SCols=' '
+      call getenv('COLUMNS',SCols)
+      ITermCols=0
+      read(SCols,*,err=9112,end=9112) ITermCols
+ 9112 continue
+      if (ITermCols.le.0) ITermCols=120
+      IProgLen=ITermCols-32
+      if (IProgLen.lt.10) IProgLen=10
+      if (IProgLen.gt.80) IProgLen=80
       IProgFill=int(ProgFrac*dfloat(IProgLen)+0.5d0)
       if (IProgFill.lt.0) IProgFill=0
       if (IProgFill.gt.IProgLen) IProgFill=IProgLen
-      ProgBar='[........................................]'
+      ProgBar=' '
+      ProgBar(1:1)='['
+      do ip=1,IProgLen
+      ProgBar(ip+1:ip+1)='.'
+      enddo
+      ProgBar(IProgLen+2:IProgLen+2)=']'
       do ip=1,IProgFill
       ProgBar(ip+1:ip+1)='#'
       enddo
@@ -4172,8 +4191,10 @@ C       CHECKING FOR ENERGY, MOMEMTUM AND BARYON CHARGE CONSERVATION
       EscGreen=char(27)//'[92m'
       EscReset=char(27)//'[0m'
 
-      write(*,1002) EscGreen,ProgBar,EscReset,ProgPerc,ncyc,icysum,
-     1 sumT00*dxdydz,sumT0Z*dxdydz,sumpress*dxdydz,sumN0*dxdydz
+      write(*,1002) EscGreen,ProgBar(1:IProgLen+2),EscReset,ProgPerc,
+     1 ncyc,icysum
+      write(*,1003) sumT00*dxdydz,sumT0Z*dxdydz,sumpress*dxdydz,
+     1 sumN0*dxdydz
 c     ------------------------------------------------------------------
 c
       call plane
@@ -4465,9 +4486,15 @@ c     :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       enddo
       
       totenercornelius = totenercornelius + enetot
+      totpxcornelius   = totpxcornelius   + pxtot
+      totpycornelius   = totpycornelius   + pytot
+      totpzcornelius   = totpzcornelius   + pztot
       totbarcornelius  = totbarcornelius  + bardenstot
       write(*,*) 'FO flux cyc=',ncyc,' (P0,Px,Py,Pz,B)=',
      1 enetot,pxtot,pytot,pztot,bardenstot
+      write(*,*) 'FO flux accum=',ncyc,' (P0,Px,Py,Pz,B)=',
+     1 totenercornelius,totpxcornelius,totpycornelius,totpzcornelius,
+     2 totbarcornelius
 
 
       write (734,*) ncyc*dtconv,rnegene,posene,enetot,
@@ -4571,9 +4598,9 @@ c
   999 format (3i4,' ',9(E12.5,' '))
  1000 format ('ncyc=',i3,' t=',f10.6,'  E_tot=',f24.15,' [GeV]  kp=',i7,
      1' compmx=',f9.6,'  dxdydz=',f17.14,'  rdxdydz=',4f18.14)
- 1002 format ('Progress ',a,a,a,1x,f6.2,'%',2x,'(',i7,'/',i7,') ',
-     1 'sumT00*V=',e16.8,' sumT0Z*V=',e16.8,' sumpress*V=',e16.8,
-     2 ' sumN0*V=',e16.8)
+ 1002 format ('Progress ',a,a,a,1x,f6.2,'%',2x,'(',i7,'/',i7,')')
+ 1003 format ('sumT00*V=',e16.8,' sumT0Z*V=',e16.8,' sumpress*V=',
+     1 e16.8,' sumN0*V=',e16.8)
  1010 format (' Following are quantities in each cell; to convert to fm^
      1 -3, multiply by',f10.6)
  1020 format (3f21.16)

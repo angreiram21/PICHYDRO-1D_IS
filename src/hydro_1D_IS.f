@@ -2740,8 +2740,9 @@ c
       INTEGER :: NCornCallCycle, NCornSurfCycle, NCornSkipCycle
       INTEGER :: NCornInvalidCycle
       INTEGER :: IProgLen, IProgFill, ip, ITermCols
+      INTEGER :: iEmax, jEmax, kEmax, iPmax, jPmax, kPmax
       LOGICAL :: has_cross_pre, has_cross_post, cube_valid
-      REAL*8 ProgFrac, ProgPerc
+      REAL*8 ProgFrac, ProgPerc, maxEcyc, maxPcyc
       CHARACTER*122 ProgBar
       CHARACTER*5 EscGreen
       CHARACTER*4 EscReset
@@ -4149,18 +4150,53 @@ C       CHECKING FOR ENERGY, MOMEMTUM AND BARYON CHARGE CONSERVATION
       sumT0Z=0
       sumpress=0
       sumwijk=0
+      maxEcyc=0.d0
+      maxPcyc=0.d0
+      iEmax=0
+      jEmax=0
+      kEmax=0
+      iPmax=0
+      jPmax=0
+      kPmax=0
       do i=1,ibar
       do j=1,jbar
       do k=1,kbar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
+      if (isnan(e(ijk)).or.isnan(p(ijk)).or.isnan(capn(ijk))) then
+      write(*,*) 'NaN bulk field at cyc,i,j,k=',ncyc,i,j,k,
+     1 ' e=',e(ijk),' p=',p(ijk),' n=',capn(ijk)
+      stop 9151
+      endif
+      if (dabs(e(ijk)).gt.huge(1.d0).or.dabs(p(ijk)).gt.huge(1.d0)) then
+      write(*,*) 'Inf bulk field at cyc,i,j,k=',ncyc,i,j,k,
+     1 ' e=',e(ijk),' p=',p(ijk)
+      stop 9152
+      endif
       sumN0=sumN0+capn(ijk)
       sumT00=sumT00+e(ijk)
       sumT0Z=sumT0Z+zmom(ijk)
       sumpress=sumpress+p(ijk)
       sumwijk=sumwijk+abs(w(ijk))
+      if (dabs(e(ijk)).gt.maxEcyc) then
+      maxEcyc=dabs(e(ijk))
+      iEmax=i
+      jEmax=j
+      kEmax=k
+      endif
+      if (dabs(p(ijk)).gt.maxPcyc) then
+      maxPcyc=dabs(p(ijk))
+      iPmax=i
+      jPmax=j
+      kPmax=k
+      endif
       enddo
       enddo
       enddo
+      if (maxEcyc.gt.1.d12.or.maxPcyc.gt.1.d12) then
+      write(*,*) 'WARNING unphysical bulk scale at cyc=',ncyc,
+     1 ' |e|max=',maxEcyc,' at ',iEmax,jEmax,kEmax,
+     2 ' |p|max=',maxPcyc,' at ',iPmax,jPmax,kPmax
+      endif
 
       ProgFrac=0.d0
       if (icysum.gt.0) ProgFrac=dfloat(ncyc)/dfloat(icysum)
@@ -5947,6 +5983,12 @@ c      if (iphs3.eq.2) pijk=eps/3.-4.*bbag/3.
 c      if (kdebug.ne.0) write (156,690) i,j,k,pijk,(eps-4.*bbag)/3.,bbag,
 c     1 pq
 c
+      if (pijk.lt.0.) pijk=0.
+      if (e(ijk).gt.0..and.pijk.gt.e(ijk)) then
+      if (pijk.gt.1.d12) write(*,*) 'WARNING p capped in phase3 cyc=',
+     1 ncyc,' i,j,k=',i,j,k,' p=',pijk,' e_lab=',e(ijk)
+      pijk=e(ijk)
+      endif
       if (vijk.ne.0..and.jdim1.eq.1) write (*,*) 'PROBLEM in intern-vijk
      1',i,j,k,vijk,ymom(ijk)
       if (iphs3.eq.1) go to 290 !iphs3=1
@@ -6867,6 +6909,8 @@ c  should make the dimension consistent with common
       w(ijk)=storev(ko)
       ko=ko+1
       p(ijk)=storev(ko)
+      if (p(ijk).lt.0.) p(ijk)=0.
+      if (e(ijk).gt.0..and.p(ijk).gt.e(ijk)) p(ijk)=e(ijk)
       if (u(ijk)**2+v(ijk)**2+w(ijk)**2 .gt. 1.) then
       write (*,*) 'v^2>1 in line 5554',i,j,k,u(ijk),v(ijk),w(ijk)
       wijk=0.
@@ -6886,6 +6930,8 @@ c       if (ijk.ne.ijkz) write (156,*) ' problems with storev',ijk,ijkz
       v(ijk)=vijk
       w(ijk)=wijk
       p(ijk)=pijk
+      if (p(ijk).lt.0.) p(ijk)=0.
+      if (e(ijk).gt.0..and.p(ijk).gt.e(ijk)) p(ijk)=e(ijk)
   390 continue
   400 continue
   410 continue
@@ -7071,6 +7117,7 @@ c_                                      __________________prxx
   500 continue
       p(ijk)=pijk
       if (p(ijk).lt.0.) p(ijk)=0.
+      if (e(ijk).gt.0..and.p(ijk).gt.e(ijk)) p(ijk)=e(ijk)
 
 
 
@@ -10781,6 +10828,12 @@ c_                                      __________________prxx
   650 continue
       prsijk=pijk
       if (koast.eq.1) pijk=prssum
+      if (pijk.lt.0.) pijk=0.
+      if (b.gt.0..and.pijk.gt.b) then
+      if (pijk.gt.1.d12) write(*,*) 'WARNING p capped in intern cyc=',
+     1 ncyc,' i,j,k=',i,j,k,' p=',pijk,' e_lab=',b,' iphs3=',iphs3
+      pijk=b
+      endif
       epsc=0.
       if (xi.ne.0.) xth=(eps/xi-eusual)*econ-epsc
 c xth is the thermal energy density

@@ -2735,7 +2735,12 @@ c
       INTEGER :: Nambi, Ndisc,Nsurf
       INTEGER :: NCornCallCycle, NCornSurfCycle, NCornSkipCycle
       INTEGER :: NCornInvalidCycle
+      INTEGER :: IProgLen, IProgFill, ip
       LOGICAL :: has_cross_pre, has_cross_post, cube_valid
+      REAL*8 ProgFrac, ProgPerc
+      CHARACTER*42 ProgBar
+      CHARACTER*5 EscGreen
+      CHARACTER*4 EscReset
       common /chktsm/ sumchem,sumtemp,sumentro,nlpc
       common /plcm1/ aa1(91627237)
       common /plcm2/ aa2(91627237)
@@ -3763,8 +3768,8 @@ c         write (156,1580) t,ncyc*dtconv,ncyc,smx,smz,sme,eeerr,compmy
 c      1  ,compmx,icmax,jcmax,kcmax
 c        write (*,1580) t,ncyc*dtconv,ncyc,smx,smz,sme,eeerr,compmy
 c      1  ,compmx,icmax,jcmax,kcmax
-       porcomp = 100. - float(icysum-ncyc)/float(icysum)*100.
-       write (*,*) porcomp,' % completed'
+c      porcomp = 100. - float(icysum-ncyc)/float(icysum)*100.
+c      write (*,*) porcomp,' % completed'
 c         if (kdebug.gt.0) write (156,1210) sme,sme1,sme-sme1,capnto
         if (cnfst/cntot.gt.21.0) write (*,810) numfst,cnfst,100.*cnfst
      1  /cntot
@@ -3886,16 +3891,7 @@ C       CHECKING FOR ENERGY, MOMEMTUM AND BARYON CHARGE CONSERVATION
       enddo
       enddo
       enddo
-      write (*,*) '----------------------------------------------------'
-      write (*,*) 'cyc = ',ncyc
-      write (*,*) 'Before calling subroutine phase1: '
-      write (*,*) 'T00 [MeV*fm-3], T0Z [MeV*fm-3], T0Y [MeV*fm-3]'
-      write (*,*) 'T0X [MeV*fm-3], N0 [fm-3], press [MeV*fm-3]'
-      write (*,*) ''
-      write(*,*) 'sumT00*V=',sumT00*dxdydz,
-     1 'sumT0Z*V=',sumT0Z*dxdydz,'sumpress*V=',sumpress*dxdydz,
-     2 'sumN0*V=',sumN0*dxdydz,'sum(abs(wijk))=', sumwijk
-      write (*,*) '----------------------------------------------------'
+c     verbose per-phase print disabled
 
 c                STORING THE DATA OF THE LAST CYCLE  (ncyc-1)
 c      rewind 334
@@ -4012,15 +4008,7 @@ C       CHECKING FOR ENERGY, MOMEMTUM AND BARYON CHARGE CONSERVATION
       enddo
       enddo
       enddo
-      write (*,*) '----------------------------------------------------'
-      write (*,*) 'cyc = ',ncyc
-      write (*,*) 'After calling subroutine phase1 and starting phase2:'
-      write (*,*) 'T00 [MeV], T0Z [MeV], T0Y [MeV]'
-      write (*,*) 'T0X [MeV], N0 [], press [MeV*fm-3]'
-      write (*,*) ''
-      write(*,*) 'sumT00*V=',sumT00,'sumT0Z*V=',sumT0Z,'sumpress*V=',
-     1 sumpress*dxdydz,'sumN0*V=',sumN0,'sum(abs(wijk))=', sumwijk
-      write (*,*) '----------------------------------------------------'
+c     verbose per-phase print disabled
 
 c     ------------------------------------------------------------------
 c
@@ -4094,15 +4082,7 @@ C       CHECKING FOR ENERGY, MOMEMTUM AND BARYON CHARGE CONSERVATION
       enddo
       enddo
       enddo
-      write (*,*) '----------------------------------------------------'
-      write (*,*) 'cyc = ',ncyc
-      write (*,*) 'After calling subroutine phase2 and starting phase 3'
-      write (*,*) 'T00 [MeV], T0Z [MeV], T0Y [MeV]'
-      write (*,*) 'T0X [MeV], N0 [], press [MeV*fm-3]'
-      write (*,*) ''
-      write(*,*) 'sumT00*V=',sumT00,'sumT0Z*V=',sumT0Z,'sumpress*V=',
-     1 sumpress*dxdydz,'sumN0*V=',sumN0,'sum(abs(wijk))=', sumwijk
-      write (*,*) '----------------------------------------------------'
+c     verbose per-phase print disabled
 
 c     ------------------------------------------------------------------
       diff4=secnds(start)
@@ -4175,18 +4155,25 @@ C       CHECKING FOR ENERGY, MOMEMTUM AND BARYON CHARGE CONSERVATION
       enddo
       enddo
       enddo
-      write (*,*) '----------------------------------------------------'
-      write (*,*) 'cyc = ',ncyc
-      write (*,*) 'After calling subroutine phase3: '
-      write (*,*) 'T00 [MeV*fm-3], T0Z [MeV*fm-3], T0Y [MeV*fm-3]'
-      write (*,*) 'T0X [MeV*fm-3], N0 [fm-3], press [MeV*fm-3]'
-      write (*,*) ''
-      write(*,*) 'sumT00*V=',sumT00*dxdydz,
-     1 'sumT0Z*V=',sumT0Z*dxdydz,'sumpress*V=',sumpress*dxdydz,
-     2 'sumN0*V=',sumN0*dxdydz,'sum(abs(wijk))=', sumwijk,'sumchem',
-     3 sumchem,'sumtemp',sumtemp,'sumentro',sumentro,nlpc
-      write(*,*) 'TNC3699',ktnc
-      write (*,*) '----------------------------------------------------'
+
+      ProgFrac=0.d0
+      if (icysum.gt.0) ProgFrac=dfloat(ncyc)/dfloat(icysum)
+      if (ProgFrac.lt.0.d0) ProgFrac=0.d0
+      if (ProgFrac.gt.1.d0) ProgFrac=1.d0
+      IProgLen=40
+      IProgFill=int(ProgFrac*dfloat(IProgLen)+0.5d0)
+      if (IProgFill.lt.0) IProgFill=0
+      if (IProgFill.gt.IProgLen) IProgFill=IProgLen
+      ProgBar='[........................................]'
+      do ip=1,IProgFill
+      ProgBar(ip+1:ip+1)='#'
+      enddo
+      ProgPerc=100.d0*ProgFrac
+      EscGreen=char(27)//'[92m'
+      EscReset=char(27)//'[0m'
+
+      write(*,1002) EscGreen,ProgBar,EscReset,ProgPerc,ncyc,icysum,
+     1 sumT00*dxdydz,sumT0Z*dxdydz,sumpress*dxdydz,sumN0*dxdydz
 c     ------------------------------------------------------------------
 c
       call plane
@@ -4221,6 +4208,9 @@ c
       hypercube   = 0.
       dsigma      = 0.
       enetot      = 0.
+      pxtot       = 0.
+      pytot       = 0.
+      pztot       = 0.
       bardenstot  = 0.
       deltaenergy = 0.
       rnegbflow   = 0.
@@ -4424,6 +4414,20 @@ c      endif
       ene=(dSigma(0,ii)*tnn+dSigma(1,ii)*tnx+dSigma(2,ii)*tny+
      1     dSigma(3,ii)*tnz)
 
+      txx=(emid+pressmid2)*Vxmid*Vxmid*gammid**2+pressmid2
+      txy=(emid+pressmid2)*Vxmid*Vymid*gammid**2
+      txz=(emid+pressmid2)*Vxmid*Vzmid*gammid**2
+      tyy=(emid+pressmid2)*Vymid*Vymid*gammid**2+pressmid2
+      tyz=(emid+pressmid2)*Vymid*Vzmid*gammid**2
+      tzz=(emid+pressmid2)*Vzmid*Vzmid*gammid**2+pressmid2
+
+      pxflow=(dSigma(0,ii)*tnx+dSigma(1,ii)*txx+dSigma(2,ii)*txy+
+     1     dSigma(3,ii)*txz)
+      pyflow=(dSigma(0,ii)*tny+dSigma(1,ii)*txy+dSigma(2,ii)*tyy+
+     1     dSigma(3,ii)*tyz)
+      pzflow=(dSigma(0,ii)*tnz+dSigma(1,ii)*txz+dSigma(2,ii)*tyz+
+     1     dSigma(3,ii)*tzz)
+
       if((ene).lt.0)then
       rnegene=rnegene+ene
       else
@@ -4431,6 +4435,9 @@ c      endif
       endif
 
       enetot     = enetot     + ene
+      pxtot      = pxtot      + pxflow
+      pytot      = pytot      + pyflow
+      pztot      = pztot      + pzflow
       bardenstot = bardenstot + bflow
 
       tau = sqrt(1d0-Vxmid**2-Vymid**2-Vzmid**2)*Hypert
@@ -4459,12 +4466,8 @@ c     :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       
       totenercornelius = totenercornelius + enetot
       totbarcornelius  = totbarcornelius  + bardenstot
-      write(*,*) 'Cornelius cyc=',ncyc,' calls=',NCornCallCycle,
-     1 ' NsTot=',NCornSurfCycle,' skipped=',NCornSkipCycle,
-     2 ' invalid=',NCornInvalidCycle,' Nambi=',Nambi,' Ndisc=',Ndisc
-
-      write(*,*) "bardenstot_fo   = ",totbarcornelius
-      write(*,*) "enetot_fo       = ",totenercornelius
+      write(*,*) 'FO flux cyc=',ncyc,' (P0,Px,Py,Pz,B)=',
+     1 enetot,pxtot,pytot,pztot,bardenstot
 
 
       write (734,*) ncyc*dtconv,rnegene,posene,enetot,
@@ -4568,6 +4571,9 @@ c
   999 format (3i4,' ',9(E12.5,' '))
  1000 format ('ncyc=',i3,' t=',f10.6,'  E_tot=',f24.15,' [GeV]  kp=',i7,
      1' compmx=',f9.6,'  dxdydz=',f17.14,'  rdxdydz=',4f18.14)
+ 1002 format ('Progress ',a,a,a,1x,f6.2,'%',2x,'(',i7,'/',i7,') ',
+     1 'sumT00*V=',e16.8,' sumT0Z*V=',e16.8,' sumpress*V=',e16.8,
+     2 ' sumN0*V=',e16.8)
  1010 format (' Following are quantities in each cell; to convert to fm^
      1 -3, multiply by',f10.6)
  1020 format (3f21.16)

@@ -1,8 +1,9 @@
 Compile and link:
 mkdir build
 cd build
-gfortran -c ../src/hydro_3D_IS.f ../src/cornelius.f90 -mcmodel=large
-gfortran *.o -o hydro
+gfortran -ffixed-line-length-none -c ../src/hydro_1D_IS.f ../src/cornelius.f90 -mcmodel=large
+gfortran -mcmodel=large *.o -o hydro
+
 
 
 ene0 = 146 MeV/fm3

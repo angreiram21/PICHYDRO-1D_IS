@@ -13,10 +13,10 @@ c
       common /files/ outfile, infile, linfile, loutfile
       common /files1/ instaf(100)
       common /myl/ kstrng(100)
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
       common /pscm1/ aa(1), ap, at, day, dt, dto, dtodx, dtody, dtodz,
      1 dx, dxdydz, dy, dz, econ, emevp, emevt, emid3, em0, em0n0, en0,
      2 eosgm1, eps0, e0(2), fibar, fjbar, fkbar, fx(2), fz(2), gam(2),
@@ -123,10 +123,10 @@ c
 c   Note that kpmax is three times the number of markers because of
 c    three dimensions
       nq=3
-      lcmb=18325447
+      lcmb=91627233
       ijkmax=lcmb/nq
-      if (ijkmax.gt.6108523) stop 248
-      kpmax=17175411
+      if (ijkmax.gt.30542452) stop 248
+      kpmax=85877055
       kpm=kpmax/3
       call dmill (ijkmax,ij0,ij1a,ij2)
       call dmill (kpmax,kp0,kp1,kp2)
@@ -377,10 +377,10 @@ c
 c
 c  routine to calculate n'th degree weighting for velocity transport
 c
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
       common /pscm1/ aa(1), ap, at, day, dt, dto, dtodx, dtody, dtodz,
      1 dx, dxdydz, dy, dz, econ, emevp, emevt, emid3, em0, em0n0, en0,
      2 eosgm1, eps0, e0(2), fibar, fjbar, fkbar, fx(2), fz(2), gam(2),
@@ -398,9 +398,8 @@ c
      2 kslab, interp, interv, npart, npartz, nparp, nparpz, krandm,
      3 kbarmx, modcyc, ioptos4
 c
-      dimension u(18325447), v(18325447), w(18325447), capn(18325447), p
-     1 (18325447), e(18325447), xmom(18325447), ymom(18325447), zmom(183
-     2 25447)
+      dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
+     1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233)
 c
       equivalence (aa1(1),u), (aa1(2),v), (aa1(3),w), (aa2(1),capn),
      1 (aa2(2),p), (aa2(3),e), (aa3(1),xmom), (aa3(2),ymom), (aa3(3)
@@ -661,11 +660,11 @@ c     cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine strmomb (ijk,i,c)
       implicit real*8 (a-h,o-z)
 c
-      common /bccket/ lablbk(305348), cn(305348)
+      common /bccket/ lablbk(1527120), cn(1527120)
       data modnum /304139/
 c
       k=mod(ijk,modnum)+1
-      do 10 i=k,305348
+      do 10 i=k,1527120
       if (lablbk(i).eq.ijk) go to 30
       if (lablbk(i).ne.-1) go to 10
       lablbk(i)=ijk
@@ -735,15 +734,15 @@ c     cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
       implicit real*8 (a-h,o-z)
 c
-      common /bucket/ lablbk(305348), xm(305348), ym(305348), zm(305348)
-     1 , en(305348), cn(305348), cnzvl(305348)
+      common /bucket/ lablbk(1527120), xm(1527120), ym(1527120), zm(1527120)
+     1 , en(1527120), cn(1527120), cnzvl(1527120)
       data modnum /304139/
 c
       k=mod(ijk,modnum)+1
-      if (k.gt.305348) go to 50
+      if (k.gt.1527120) go to 50
 c       if (c.eq.0.) write (156,*) ' c is zero in strmom  help',ijk,x,y,
 c      1 z,e
-      do 10 i=k,305348
+      do 10 i=k,1527120
       if (lablbk(i).eq.ijk) go to 30
       if (lablbk(i).ne.-1) go to 10
       lablbk(i)=ijk
@@ -999,14 +998,13 @@ c     cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       function retrev (ijk)
       implicit real*8 (a-h,o-z)
 c
-      common /bucket/ lablbk(305348), ensort(305348), eza(305348), ezb(3
-     1 05348), ezc(305348), ezd(305348), cnzzz(305348)
+      common /bucket/ lablbk(1527120), ensort(1527120), eza(1527120), ezb(1527120), ezc(1527120), ezd(1527120), cnzzz(1527120)
 c
       data modnum /304139/
 c
       k=mod(ijk,modnum)+1
       retrev=0.
-      do 10 i=k,305348
+      do 10 i=k,1527120
       if (ijk.eq.lablbk(i)) go to 30
       if (lablbk(i).eq.-1) go to 40
    10 continue
@@ -1055,30 +1053,30 @@ c     Feb 2005 - changed to read input from fort.100
      2 compmy, koast, kext, cpntot, compmx, compe,iundee(58)
       common /option/ cycenx, bcoef, eta, comprs, epsnew, barn, keqost,
      1 icysum, kresrt
-      common /matric/ zmin(199,89), zmax(199,89), energ(199,70), velz(19
-     1 9,70), dens(199,70), zsmz(200), adens(297,496), kmove(496), Rpl(1
-     2 99,70), Rmi(199,70), chyz(199,70), dummy(629187)
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
-      common /extrl/ zkmin(200,100), zkmax(200,100)
-      Integer imid, kmid, indicator(199,70)
+      common /matric/ zmin(300,300), zmax(300,300), energ(300,300), velz
+     1 (300,300), dens(300,300), zsmz(200), adens(300,700), kmove(700),
+     2 Rpl(300,300), Rmi(300,300), chyz(300,300), dummy(1)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
+      common /extrl/ zkmin(300,300), zkmax(300,300)
+      Integer imid, kmid, indicator(300,300)
       common /newstf/ vlxyz, ioptosq, ismin1, ismax, nxv, nyv, nredux,
      1 nreduy, nreduz, ioptos1, ioptos2, ioptos3, kw, kdebug, ktnc,
      2 kslab, interp, interv, npart, npartz, nparp, nparpz, krandm,
      3 kbarmx, modcyc, ioptos4
       common /thestf/ rap00, Tfin, dxv, dyv, dzv, epsilon00, b0, rho00,
      1 e00
-      dimension u(12970521), v(12970521), w(12970521), capn(12970521), p
-     1 (9170521), e(12970521), xmom(12970521), ymom(12970521), zmom(1297
-     2 0521), yncont(100), yecont(100), yzcont(100), xncont(299), xecont
-     3 (299), xzcont(299), zncont(299), zecont(299), zzcont(299)
-      dimension pressure(12970521)
-      dimension px(7075011), py(7075011), pz(7075011), alpha(18)
+      dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
+     1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(9162
+     2 7233), yncont(700), yecont(700), yzcont(700), xncont(700), xecont
+     3 (700), xzcont(700), zncont(700), zecont(700), zzcont(700)
+      dimension pressure(91627233)
+      dimension px(85877055), py(85877055), pz(85877055), alpha(18)
       real*8 eijk, anijk, pressijk, wijk, uijk, vijk, zmomijk, xmomijk,
      1 ymomijk, pNtot, Etot
-      dimension nypt(200)
+      dimension nypt(700)
       equivalence (aa1(1),u), (aa1(2),v), (aa1(3),w), (aa2(1),capn),
      1 (aa2(2),p), (aa2(3),e), (aa3(1),xmom), (aa3(2),ymom), (aa3(3)
      2 ,zmom)
@@ -1100,7 +1098,7 @@ c     nredux=1
       if (kslab.eq.8) then
 c   Define ibar, jbar, kbar
 c       ijkmax -> # of fluid cells
-        zmxx=ijkmax/3 ! ijkmax=6108482, zmxx=2036160
+        zmxx=ijkmax/3 ! ijkmax=30542411, zmxx=2036160
 c   extraz is the ratio of ibar to kbar and allows more expansion in the
 c     z direction.  Can change if needed.
         extraz=3.0
@@ -1158,8 +1156,8 @@ c     To get correct cell sizes ???????
 c       write (156,1430) vlxyz,volxyz,dxdy,dxdydz
 c       write (156,1190)
       rvolxyz=1./volxyz
-      do 20 i=1,197
-      do 10 j=1,496
+      do 20 i=1,300
+      do 10 j=1,700
       adens(i,j)=0.
    10 continue
    20 continue
@@ -1171,13 +1169,13 @@ c     N0 [fm-3], pressure [MeV/fm3], T00 [MeV/fm3]
       aa3(i)=0. ! In this vector is stored the three components of the 
 c     momentum
    30 continue
-      do 40 i=1,100
+      do 40 i=1,700
       yncont(i)=0.
       yecont(i)=0.
       yzcont(i)=0.
       nypt(i)=0.
    40 continue
-      do 50 i=1,299
+      do 50 i=1,700
       xncont(i)=0.
       xecont(i)=0.
       xzcont(i)=0.
@@ -1186,7 +1184,7 @@ c     momentum
       zzcont(i)=0.
    50 continue
 c       Just to fill in since in common
-      do 70 i=1,199
+      do 70 i=1,300
       do 60 j=1,70
       dens(i,j)=0.
       energ(i,j)=0.
@@ -1357,7 +1355,7 @@ c       write (*,*) 'sumT00*V=',egsum_prueba*dxdydz,'sumT0Z*V',
 c      1 sum_zmomijk*dxdydz,'sumpress=',sum_press*dxdydz,'sumN0*V=',
 c      2 agsum_prueba*dxdydz,'sum(abs(wijk))',sum_wijk
 c       write (156,1190)
-      numps=kpmax/3 ! kpmax=17175411, numps=5725137
+      numps=kpmax/3 ! kpmax=85877055, numps=28625685
       numdes=porton*dfloat(numps) ! porton=0.9, numdes=5152623
       dpt=agsum*dxdydz/dfloat(numdes) ! Now dpt is dimensionless dpt=3.3330075366957684E-005
 c       write (156,1260) i6
@@ -1476,7 +1474,7 @@ c
       ireflc=i1max-i1min
       jreflc=j1max-j1min
       kreflc=k1max-k1min
-      do 200 i1=1,299
+      do 200 i1=1,700
       if (xecont(i1).eq.0.) go to 200
       ireflc=i1mean-i1
       axtot=axtot+xncont(i1) ! baryon charge
@@ -1486,7 +1484,7 @@ c
       zpern=0. ! z-component of momentum per nucleon
       if (xncont(i1).ne.0.) zpern=xzcont(i1)/xncont(i1) ! MeV/fm3/nucl
   200 continue
-      do 210 j1=1,100
+      do 210 j1=1,700
       if (yecont(j1).eq.0.) go to 210
       jreflc=j1mean-j1
       epern=0.
@@ -1496,7 +1494,7 @@ c
       zpern=0.
       if (yncont(j1).ne.0.) zpern=yzcont(j1)/yncont(j1)
   210 continue
-      do 220 j1=1,299
+      do 220 j1=1,700
       if (zecont(j1).eq.0.) go to 220
       kreflc=k1mean-j1
       epern=0.
@@ -1796,8 +1794,8 @@ c         write (156,1420) kout,kout*dpt
       nyptmx=j
   560 continue
 c       write (156,1120) nyptmn,nyptmx
-      do 580 i=1,197
-      do 570 j=1,496
+      do 580 i=1,300
+      do 570 j=1,700
       adens(i,j)=0.
   570 continue
   580 continue
@@ -2410,10 +2408,10 @@ c     cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
       integer*2 koost
 c
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
       common /pscm1/ aa(1), ap, at, day, dt, dto, dtodx, dtody, dtodz,
      1 dx, dxdydz, dy, dz, econ, emevp, emevt, emid3, em0, em0n0, en0,
      2 eosgm1, eps0, e0(2), fibar, fjbar, fkbar, fx(2), fz(2), gam(2),
@@ -2423,7 +2421,7 @@ c
      6 pnu(2), rdx, rdxdydz, rdy, rdz, remnsq, rem0n0, ren0, smaj(2),
      7 smin(2), sumnu(2), t, time, tnc, tout, twopi, w0(2), xdisp, zmom0
      8 (2), convpu, dtmod, dzvfm
-      common /plcm7/ kextrn(6108482), koost(6108482)
+      common /plcm7/ kextrn(30542411), koost(30542411)
       common /averps/ xaveps, yaveps, zaveps
       common /gamsol/ enzz, bbagzz, rrr, amom, bbagde
       common /gss/ sigx, sigy, sigz, radx, rady, radz, kspher
@@ -2448,10 +2446,10 @@ c
       common /extrmes/ xextrn, xextrx, yextrx, zextrn, zextrx, kox
       common /hxi33/ hxi3a, xi, hxi
       common /newcrp/ entot, dentot, tempav, numcll
-      common /bucket/ lablbk(305348), xmomcl(305348), ymomcl(305348),
-     1 zmomcl(305348), encell(305348), capncl(305348), cnvvl(305348)
+      common /bucket/ lablbk(1527120), xmomcl(1527120), ymomcl(1527120),
+     1 zmomcl(1527120), encell(1527120), capncl(1527120), cnvvl(1527120)
       common /backet/ lbblbk(22), cpnncl(22), convol(22)
-      common /bccket/ lablbc(305348), celvol(305348)
+      common /bccket/ lablbc(1527120), celvol(1527120)
       common /midle/ imid, kmid, kend, imidpt, kmidpt, klmin, krmax,
      1 kdisp, ipmin, ipmax, imid1
       common /spcl/ delx, delz
@@ -2468,16 +2466,15 @@ c
      1 e00
       common /pbarz/ ksuppr
       common /eqqcd/ tq, eq1, pq, sq, anq1, amuq
-      common /misca/ kmove(496), numlvv(52)
-      common /dmisca/ adens(297,496), eedns(297,496), aplot(297,496),
-     1 bplot(297,496), cplot(297,496)
+      common /misca/ kmove(700), numlvv(52)
+      common /dmisca/ adens(300,700), eedns(300,700), aplot(300,700),
+     1 bplot(300,700), cplot(300,700)
       common /miscnw/ cnfst, numfst
 c
-      dimension u(18325447), v(18325447), w(18325447), capn(18325447), p
-     1 (18325447), e(18325447), xmom(18325447), ymom(18325447), zmom(183
-     2 25447)
+      dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
+     1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233)
 c
-      dimension px(17175411), py(17175411), pz(17175411)
+      dimension px(85877055), py(85877055), pz(85877055)
       equivalence (aa1(1),u), (aa1(2),v), (aa1(3),w), (aa2(1),capn),
      1 (aa2(2),p), (aa2(3),e), (aa3(1),xmom), (aa3(2),ymom), (aa3(3)
      2 ,zmom)
@@ -2631,10 +2628,10 @@ c
       INTEGER :: NCornInvalidCycle
       LOGICAL :: has_cross_pre, has_cross_post, cube_valid
       common /chktsm/ sumchem,sumtemp,sumentro,nlpc
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
       common /pscm1/ aa(1), ap, at, day, dt, dto, dtodx, dtody, dtodz,
      1 dx, dxdydz, dy, dz, econ, emevp, emevt, emid3, em0, em0n0, en0,
      2 eosgm1, eps0, e0(2), fibar, fjbar, fkbar, fx(2), fz(2), gam(2),
@@ -2644,7 +2641,7 @@ c
      6 pnu(2), rdx, rdxdydz, rdy, rdz, remnsq, rem0n0, ren0, smaj(2),
      7 smin(2), sumnu(2), t, time, tnc, tout, twopi, w0(2), xdisp, zmom0
      8 (2), convpu, dtmod, dzvfm
-      common /plcm7/ kextrn(6108482), koost(6108482)
+      common /plcm7/ kextrn(30542411), koost(30542411)
       common /averps/ xaveps, yaveps, zaveps
       common /gamsol/ enzz, bbagzz, rrr, dumm1, dumm2
       common /gss/ sigx, sigy, sigz, radx, rady, radz, kspher
@@ -2667,18 +2664,18 @@ c
       common /extrmes/ xextrn, xextrx, yextrx, zextrn, zextrx, kox
       common /hxi33/ hxi3a, xi, hxi
       common /newcrp/ entot, dentot, tempav, numcll
-      common /bucket/ lablbk(305348), xmomcl(305348), ymomcl(305348),
-     1 zmomcl(305348), encell(305348), capncl(305348), cnvvl(305348)
+      common /bucket/ lablbk(1527120), xmomcl(1527120), ymomcl(1527120),
+     1 zmomcl(1527120), encell(1527120), capncl(1527120), cnvvl(1527120)
       common /backet/ lbblbk(22), cpnncl(22), convol(22)
-      common /bccket/ lablbc(305348), celvol(305348)
-      common /volbuk/ lblvol(305348), retvol(305348)
+      common /bccket/ lablbc(1527120), celvol(1527120)
+      common /volbuk/ lblvol(1527120), retvol(1527120)
       common /momen/ dumdum(61), npion, kmin, kmax, i1, i2, k1, k2
       common /yestemp/ jtemp
       common /juet/ dxyz1, pwq, amnW, beta2, gammaf, betat, cosfi, gjut,
      1 y0, hj, sumths
       common /timing/ diffp1, diffp2, diffp3, diffp4, diffp5, start
       common /plasma/ sumplast, iplasma, kplasma
-      common /matric/ storev(895199), idensz(500), edensz(500)
+      common /matric/ storev(929801), idensz(500), edensz(500)
       common /transp/ xte, yte, zte, hpx, hmx, hpy, hmy, hpz, hmz, i, j,
      1 k, l, ueff, veff, weff, cneff, xmeff, ymeff, zmeff, eneff, ko
       common /plottt/ kbarx, kbar1, kfrstt, imidptz, kmidptz, klminz
@@ -2699,45 +2696,44 @@ c
       common /countnevent/ nevent
       common /pbarz/ ksuppr
       common /eqqcd/ tq, eq1, pq, sq, anq1, amuq
-      dimension ensort(305348)
-      common /misca/ kmove(496), numlvv(52)
-      common /dmisca/ adens(297,496), eedns(297,496), aplot(297,496),
-     1 bplot(297,496), cplot(297,496)
+      dimension ensort(1527120)
+      common /misca/ kmove(700), numlvv(52)
+      common /dmisca/ adens(300,700), eedns(300,700), aplot(300,700),
+     1 bplot(300,700), cplot(300,700)
       common /miscnw/ cnfst, numfst
       common /corneliuss/ totenercornelius,totbarcornelius
-      dimension u(18325447), v(18325447), w(18325447), capn(18325447), p
-     1 (18325447), e(18325447), xmom(18325447), ymom(18325447), zmom(183
-     2 25447)
+      dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
+     1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233)
      
       common /timeconv/ dtconv
       
       
-      common /posevent/ enerdensrfpos(1:200,1:200,1:400),enerdensrfpost(
-     & 1:200,1:200,1:400),bardensrfpos(1:200,1:200,1:400),bardensrfpost(
-     & 1:200,1:200,1:400),enerdenslfpos(1:200,1:200,1:400),bardenslfpos(
-     & 1:200,1:200,1:400),vxpos(1:200,1:200,1:400),vxpost(1:200,1:200,1:
-     & 400),vypos(1:200,1:200,1:400),vypost(1:200,1:200,1:400),vzpos(1:2
-     & 00,1:200,1:400),vzpost(1:200,1:200,1:400),presspos(1:200,1:200,1:
-     & 400),xmomdenslfpos(1:200,1:200,1:400),ymomdenslfpos(1:200,1:200,1
-     & :400),zmomdenslfpos(1:200,1:200,1:400),posN0(1:200,1:200,1:400),p
-     & osNx(1:200,1:200,1:400),posNy(1:200,1:200,1:400),posNz(1:200,1:20
-     & 0,1:400),xmubpos(1:200,1:200,1:400),temppos(1:200,1:200,1:400)
+      common /posevent/ enerdensrfpos(1:300,1:300,1:700),enerdensrfpost(
+     & 1:300,1:300,1:700),bardensrfpos(1:300,1:300,1:700),bardensrfpost(
+     & 1:300,1:300,1:700),enerdenslfpos(1:300,1:300,1:700),bardenslfpos(
+     & 1:300,1:300,1:700),vxpos(1:300,1:300,1:700),vxpost(1:300,1:300,1:
+     & 700),vypos(1:300,1:300,1:700),vypost(1:300,1:300,1:700),vzpos(1:3
+     & 00,1:300,1:700),vzpost(1:300,1:300,1:700),presspos(1:300,1:300,1:
+     & 700),xmomdenslfpos(1:300,1:300,1:700),ymomdenslfpos(1:300,1:300,1
+     & :700),zmomdenslfpos(1:300,1:300,1:700),posN0(1:300,1:300,1:700),p
+     & osNx(1:300,1:300,1:700),posNy(1:300,1:300,1:700),posNz(1:300,1:30
+     & 0,1:700),xmubpos(1:300,1:300,1:700),temppos(1:300,1:300,1:700)
      
-      common /prevent/ enerdensrfpre(1:200,1:200,1:400),enerdensrfprev(1
-     & :200,1:200,1:400),bardensrfpre(1:200,1:200,1:400),bardensrfprev(1
-     & :200,1:200,1:400),enerdenslfpre(1:200,1:200,1:400),bardenslfpre(1
-     & :200,1:200,1:400),vxpre(1:200,1:200,1:400),vxprev(1:200,1:200,1:4
-     & 00),vypre(1:200,1:200,1:400),vyprev(1:200,1:200,1:400),vzpre(1:20
-     & 0,1:200,1:400),vzprev(1:200,1:200,1:400),xmomdenslfpre(1:200,1:20
-     & 0,1:400),ymomdenslfpre(1:200,1:200,1:400),zmomdenslfpre(1:200,1:2
-     & 00,1:400),presspre(1:200,1:200,1:400),preNx(1:200,1:200,1:400),pr
-     & eNy(1:200,1:200,1:400),preNz(1:200,1:200,1:400),preN0(1:200,1:200
-     & ,1:400),xmubpre(1:200,1:200,1:400),temppre(1:200,1:200,1:400)
+      common /prevent/ enerdensrfpre(1:300,1:300,1:700),enerdensrfprev(1
+     & :300,1:300,1:700),bardensrfpre(1:300,1:300,1:700),bardensrfprev(1
+     & :300,1:300,1:700),enerdenslfpre(1:300,1:300,1:700),bardenslfpre(1
+     & :300,1:300,1:700),vxpre(1:300,1:300,1:700),vxprev(1:300,1:300,1:7
+     & 00),vypre(1:300,1:300,1:700),vyprev(1:300,1:300,1:700),vzpre(1:30
+     & 0,1:300,1:700),vzprev(1:300,1:300,1:700),xmomdenslfpre(1:300,1:30
+     & 0,1:700),ymomdenslfpre(1:300,1:300,1:700),zmomdenslfpre(1:300,1:3
+     & 00,1:700),presspre(1:300,1:300,1:700),preNx(1:300,1:300,1:700),pr
+     & eNy(1:300,1:300,1:700),preNz(1:300,1:300,1:700),preN0(1:300,1:300
+     & ,1:700),xmubpre(1:300,1:300,1:700),temppre(1:300,1:300,1:700)
      
       dimension hypercube(0:1,0:1,0:1,0:1),dSigma(0:3,8)    
       dimension vmid(0:3,8)
      
-      dimension px(17175411), py(17175411), pz(17175411)
+      dimension px(85877055), py(85877055), pz(85877055)
       dimension numkt1(2), numkt2(2), icnt(20)
       
       DIMENSION Hypervx(0:1,0:1,0:1,0:1),Hypervy(0:1,0:1,0:1,0:1)
@@ -2790,7 +2786,7 @@ c      ene0 = 146.51751415742d0 ! MeV/fm3
       speedc=2.99792458
       radius=1.18*dfloat(197)**(1./3.)
       kdisp=0
-      kbarmx=496
+      kbarmx=700
       kskipp=1
       kbarex=11
       iwr=0
@@ -3021,7 +3017,7 @@ c
       kmx=kbarex*ip
 c
       if (mod(ibar,2).eq.1) ibar=ibar-1
-      ibar=min0(ibar,238)
+      ibar=min0(ibar,300)
       if (mod(kmx,2).eq.1) kmx=kmx+1
       kbar=min0(kmx,kbarmx)
 c
@@ -3305,7 +3301,7 @@ c      1 p(ijk),u(ijk),v(ijk),w(ijk),xmom(ijk),ymom(ijk),zmom(ijk)
 c       write (156,870)
       kend=kijend
 c
-      do 340 i=1,305348
+      do 340 i=1,1527120
       lblvol(i)=lablbk(i)
       retvol(i)=cnvvl(i)
       lablbk(i)=0.
@@ -3648,7 +3644,7 @@ c
 c       if (dabs(eeerr).gt.0.0000001) write (156,*) ' error in E _______'
 c      1 ,origen,sme,origen-sme
       num=0
-      do 490 i=1,305348
+      do 490 i=1,1527120
       if (lablbk(i).eq.-1) go to 490
       num=num+1
   490 continue
@@ -5254,7 +5250,7 @@ c     &           nmax_small,' ',nmin_small
       subroutine fillcube(i,j,k,nhyperstep,elast,e,HyperCube)
 c      include 'defs.f'      
       
-      real*8 e(1:200,1:200,1:400),elast(1:200,1:200,1:400)
+      real*8 e(1:300,1:300,1:700),elast(1:300,1:300,1:700)
       REAL(KIND(0D0)),DIMENSION(0:1,0:1,0:1,0:1) :: HyperCube
       integer nhyperstep  
       
@@ -5343,10 +5339,10 @@ c
      3 aq4, aq5, zq1, aaq1, alim, anflav, atq1, atq2, pi2, hv3, qq9, op9
       common /gamsol/ enzz, bbagzz, rrr, amom, bbagde
       common /eqqcd/ tq, eq1, pq, sq, anq1, amuq
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
       common /pscm1/ aa(1), ap, at, day, dt, dto, dtodx, dtody, dtodz,
      1 dx, dxdydz, dy, dz, econ, emevp, emevt, emid3, em0, em0n0, en0,
      2 eosgm1, eps0, e0(2), fibar, fjbar, fkbar, fx(2), fz(2), gam(2),
@@ -5363,9 +5359,9 @@ c
      1 nreduy, nreduz, ioptos1, ioptos2, ioptos3, kw, kdebug, ktnc,
      2 kslab, interp, interv, npart, npartz, nparp, nparpz, krandm,
      3 kbarmx, modcyc, ioptos4
-      common /dmisca/ adens(297,496), eedns(297,496), aplot(297,496),
-     1 bplot(297,496), cplot(297,496)
-      common /misca/ kmove(496), numlvv(52)
+      common /dmisca/ adens(300,700), eedns(300,700), aplot(300,700),
+     1 bplot(300,700), cplot(300,700)
+      common /misca/ kmove(700), numlvv(52)
 c
 c   numfz1 changed to numcli, 4/7/22
 c
@@ -5376,45 +5372,44 @@ c
      1 icysum, kresrt
 c      
       
-      common /posevent/ enerdensrfpos(1:200,1:200,1:400),enerdensrfpost(
-     & 1:200,1:200,1:400),bardensrfpos(1:200,1:200,1:400),bardensrfpost(
-     & 1:200,1:200,1:400),enerdenslfpos(1:200,1:200,1:400),bardenslfpos(
-     & 1:200,1:200,1:400),vxpos(1:200,1:200,1:400),vxpost(1:200,1:200,1:
-     & 400),vypos(1:200,1:200,1:400),vypost(1:200,1:200,1:400),vzpos(1:2
-     & 00,1:200,1:400),vzpost(1:200,1:200,1:400),presspos(1:200,1:200,1:
-     & 400),xmomdenslfpos(1:200,1:200,1:400),ymomdenslfpos(1:200,1:200,1
-     & :400),zmomdenslfpos(1:200,1:200,1:400),posN0(1:200,1:200,1:400),p
-     & osNx(1:200,1:200,1:400),posNy(1:200,1:200,1:400),posNz(1:200,1:20
-     & 0,1:400),xmubpos(1:200,1:200,1:400),temppos(1:200,1:200,1:400)
+      common /posevent/ enerdensrfpos(1:300,1:300,1:700),enerdensrfpost(
+     & 1:300,1:300,1:700),bardensrfpos(1:300,1:300,1:700),bardensrfpost(
+     & 1:300,1:300,1:700),enerdenslfpos(1:300,1:300,1:700),bardenslfpos(
+     & 1:300,1:300,1:700),vxpos(1:300,1:300,1:700),vxpost(1:300,1:300,1:
+     & 700),vypos(1:300,1:300,1:700),vypost(1:300,1:300,1:700),vzpos(1:3
+     & 00,1:300,1:700),vzpost(1:300,1:300,1:700),presspos(1:300,1:300,1:
+     & 700),xmomdenslfpos(1:300,1:300,1:700),ymomdenslfpos(1:300,1:300,1
+     & :700),zmomdenslfpos(1:300,1:300,1:700),posN0(1:300,1:300,1:700),p
+     & osNx(1:300,1:300,1:700),posNy(1:300,1:300,1:700),posNz(1:300,1:30
+     & 0,1:700),xmubpos(1:300,1:300,1:700),temppos(1:300,1:300,1:700)
      
-      common /prevent/ enerdensrfpre(1:200,1:200,1:400),enerdensrfprev(1
-     & :200,1:200,1:400),bardensrfpre(1:200,1:200,1:400),bardensrfprev(1
-     & :200,1:200,1:400),enerdenslfpre(1:200,1:200,1:400),bardenslfpre(1
-     & :200,1:200,1:400),vxpre(1:200,1:200,1:400),vxprev(1:200,1:200,1:4
-     & 00),vypre(1:200,1:200,1:400),vyprev(1:200,1:200,1:400),vzpre(1:20
-     & 0,1:200,1:400),vzprev(1:200,1:200,1:400),xmomdenslfpre(1:200,1:20
-     & 0,1:400),ymomdenslfpre(1:200,1:200,1:400),zmomdenslfpre(1:200,1:2
-     & 00,1:400),presspre(1:200,1:200,1:400),preNx(1:200,1:200,1:400),pr
-     & eNy(1:200,1:200,1:400),preNz(1:200,1:200,1:400),preN0(1:200,1:200
-     & ,1:400),xmubpre(1:200,1:200,1:400),temppre(1:200,1:200,1:400)
+      common /prevent/ enerdensrfpre(1:300,1:300,1:700),enerdensrfprev(1
+     & :300,1:300,1:700),bardensrfpre(1:300,1:300,1:700),bardensrfprev(1
+     & :300,1:300,1:700),enerdenslfpre(1:300,1:300,1:700),bardenslfpre(1
+     & :300,1:300,1:700),vxpre(1:300,1:300,1:700),vxprev(1:300,1:300,1:7
+     & 00),vypre(1:300,1:300,1:700),vyprev(1:300,1:300,1:700),vzpre(1:30
+     & 0,1:300,1:700),vzprev(1:300,1:300,1:700),xmomdenslfpre(1:300,1:30
+     & 0,1:700),ymomdenslfpre(1:300,1:300,1:700),zmomdenslfpre(1:300,1:3
+     & 00,1:700),presspre(1:300,1:300,1:700),preNx(1:300,1:300,1:700),pr
+     & eNy(1:300,1:300,1:700),preNz(1:300,1:300,1:700),preN0(1:300,1:300
+     & ,1:700),xmubpre(1:300,1:300,1:700),temppre(1:300,1:300,1:700)
      
      
       common /timeconv/ dtconv
      
-      dimension u(18325447), v(18325447), w(18325447), capn(18325447),p
-     1 (18325447), e(18325447), xmom(18325447), ymom(18325447), zmom(183
-     2 25447), px(17175411), py(17175411), pz(17175411)
+      dimension u(91627233), v(91627233), w(91627233), capn(91627233),p
+     1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233), px(85877055), py(85877055), pz(85877055)
 c
-      common /bucket/ lablbk(305348), xmomcl(305348), ymomcl(305348),
-     1 zmomcl(305348), encell(305348), capncl(305348), cnvvl(305348)
+      common /bucket/ lablbk(1527120), xmomcl(1527120), ymomcl(1527120),
+     1 zmomcl(1527120), encell(1527120), capncl(1527120), cnvvl(1527120)
       common /backet/ lbblbk(22), cpnncl(22), convol(22)
-      common /bccket/ lablbc(305348), celvol(305348)
-      common /volbuk/ lblvol(305348), retvol(305348)
-      common /matric/ storev(895199), idensz(500), edensz(500)
-      common /plcm7/ kextrn(6108482), koost(6108482)
+      common /bccket/ lablbc(1527120), celvol(1527120)
+      common /volbuk/ lblvol(1527120), retvol(1527120)
+      common /matric/ storev(929801), idensz(500), edensz(500)
+      common /plcm7/ kextrn(30542411), koost(30542411)
       common /newcrp/ entot, dentot, tempav, numcll
 c
-      dimension ensort(305348), largi(200)
+      dimension ensort(1527120), largi(200)
 c
       equivalence (ensort(1),xmomcl(1))
 c
@@ -5490,7 +5485,7 @@ c     1 sumpress*dxdydz,sumwijk
       ees=0.
       eet=0.
       if(nq.eq.0)stop 5068
-      do 100 i=1,305348
+      do 100 i=1,1527120
       ees=ees+encell(i) ! encell(i)=0 => ees=0
       if (lablbk(i).eq.-1) go to 100
       eet=eet+encell(i) ! eet=0
@@ -5554,7 +5549,7 @@ c      enddo
 c      enddo
 c      write(*,*) 'N0phas3=',sumN0,'T00=',sumT00,'sumT0Z=',sumT0Z,
 c     1 sumpress*dxdydz,sumwijk
-      do 110 i=1,305348
+      do 110 i=1,1527120
       lblvol(i)=lablbc(i)
       retvol(i)=celvol(i)
       sumv=sumv+retvol(i)
@@ -7379,10 +7374,10 @@ c
      7 smin(2), sumnu(2), t, time, tnc, tout, twopi, w0(2), xdisp, zmom0
      8 (2), convpu, dtmod, dzvfz
 c
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
 c
       common /gss/ sigx, sigy, sigz, radx, rady, radz, kspher
 c
@@ -7404,27 +7399,25 @@ c
      2 kslab, interp, interv, npart, npartz, nparp, nparpz, krandm,
      3 kbarmx, modcyc, ioptos4
 c
-      dimension u(18325447), v(18325447), w(18325447), capn(18325447), p
-     1 (18325447), e(18325447), xmom(18325447), ymom(18325447), zmom(183
-     2 25447), px(17175411), py(17175411), volm(8), volmn(8), pz(1707501
-     3 1)
+      dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
+     1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233), px(85877055), py(85877055), volm(8), volmn(8), pz(85877055)
 c
-      common /bucket/ lablbk(305348), xmomcl(305348), ymomcl(305348),
-     1 zmomcl(305348), encell(305348), capncl(305348), cnvvl(305348)
+      common /bucket/ lablbk(1527120), xmomcl(1527120), ymomcl(1527120),
+     1 zmomcl(1527120), encell(1527120), capncl(1527120), cnvvl(1527120)
 c
       common /spcl/ delx, delz
 c
-      common /bccket/ lablbc(305348), celvol(305348)
+      common /bccket/ lablbc(1527120), celvol(1527120)
       common /zavr/ zavmid, zavall
 c
       common /backet/ lbblbk(22), cpnncl(22), convol(22)
 c
-      common /volbuk/ lblvol(305348), retvol(305348)
+      common /volbuk/ lblvol(1527120), retvol(1527120)
       common /leaves/ xmomlv(300), ymomlv(300), zmomlv(300)
 c
-      common /xposn/ itrck(5770000)
+      common /xposn/ itrck(30000000)
 c
-      common /plcm7/ kextrn(6108482), koost(6108482)
+      common /plcm7/ kextrn(30542411), koost(30542411)
 c
       common /timing/ diffp1, diffp2, diffp3, diffp4, diffp5, start
 c
@@ -7457,7 +7450,7 @@ c      1_____________'
       xmo=0.
       ymo=0.
       zmo=0.
-      do 10 i=1,305348
+      do 10 i=1,1527120
       lablbk(i)=-1
       lablbc(i)=-1
       xmomcl(i)=0.
@@ -7747,8 +7740,7 @@ c  xth is the thermal energy density
       capnlf=capnlf+pnu(l)
       cnth=pnu(l)
       kleave=kleave+1
-      if (kleave.gt.40) write (*,*) ' kleave',kleave,ncyc,ko,xte
-      if (kleave.gt.40) stop 4855
+      if (kleave.eq.41) write (*,*) ' kleave exceeded 40',kleave,ncyc
 c
 c  calculate the contribution of the particle to the rapidity
 c
@@ -7829,10 +7821,10 @@ c
      7 smin(2), sumnu(2), t, time, tnc, tout, twopi, w0(2), xdisp, zmom0
      8 (2), convpu, dtmod, dzvfz
 c
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
 c
       common /midle/ imid, kmid, kend, imidpt, kmidpt, klmin, krmax,
      1 kdisp, ipmin, ipmax, imid1
@@ -7857,11 +7849,10 @@ c
 c
       common /newcrp/ entot, dentot, tempav, numcll
 c
-      dimension u(18325447), v(18325447), w(18325447), capn(18325447), p
-     1 (18325447), e(18325447), xmom(18325447), ymom(18325447), zmom(183
-     2 25447), px(17175411), py(17175411), pz(17175411)
+      dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
+     1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233), px(85877055), py(85877055), pz(85877055)
 c
-      common /plcm7/ kextrn(6108482), koost(6108482)
+      common /plcm7/ kextrn(30542411), koost(30542411)
 c
       common /eqqcd/ tq, eq1, pq, sq, anq, amuq
 c
@@ -8404,10 +8395,10 @@ c     cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
       implicit real*8 (a-h,o-z)
 c
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
 c
       common /pscm1/ aa(1), ap, at, day, dt, dto, dtodx, dtody, dtodz,
      1 dx, dxdydz, dy, dz, econ, emevp, emevt, emid3, em0, em0n0, en0,
@@ -8428,7 +8419,7 @@ c
       common /other/ eusual, epn0, t0, epion, ppion, edelt, delta, pdelt
      1 , temp, tempkn, eps, xth, epsc, dnsmax, ncycpt, ncycrp, ncycaf
 c
-      common /matric/ storev(895199), idensz(500), edensz(500)
+      common /matric/ storev(929801), idensz(500), edensz(500)
 c
       common /pscm2/ cycen, istop, isume
 c
@@ -8445,9 +8436,8 @@ c
       dimension entrpy(100), spherc(6), flux(6), evectr(9), flx(6),
      1 spher(6), fluxkp(100), fluzkp(100)
 c
-      dimension u(18325447), v(18325447), w(18325447), capn(18325447), p
-     1 (18325447), e(18325447), xmom(18325447), ymom(18325447), zmom(183
-     2 25447)
+      dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
+     1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233)
 c
 c      dimension  vv1(820521), vv2(820521), ptM(820521)
 c
@@ -8751,10 +8741,10 @@ c
 c
 c   Generate the marker particles using npartp, npatz algorithm
 c
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
 c
       common /pscm1/ aa(1), ap, at, day, dt, dto, dtodx, dtody, dtodz,
      1 dx, dxdydz, dy, dz, econ, emevp, emevt, emid3, em0, em0n0, en0,
@@ -8771,15 +8761,14 @@ c
      2 kslab, interp, interv, npart, npartz, nparp, nparpz, krandm,
      3 kbarmx, modcyc, ioptos4
 c
-      dimension u(18325447), v(18325447), w(18325447), capn(18325447), p
-     1 (9170521), e(18325447), xmom(18325447), ymom(18325447), zmom(1832
-     2 0521)
+      dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
+     1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233)
 c
-      common /xposn/ itrck(5770000)
+      common /xposn/ itrck(30000000)
 c
-      common /matric/ zmin(299,129), zmax(299,129), energ(299,129), velz
-     1 (299,129), dens(299,129), zsmz(200), adens(297,496), kmove(496),
-     2 Rpl(299,129), Rmi(299,129), chyz(299,129), dummy(439621)
+      common /matric/ zmin(300,300), zmax(300,300), energ(300,300), velz
+     1 (300,300), dens(300,300), zsmz(200), adens(300,700), kmove(700),
+     2 Rpl(300,300), Rmi(300,300), chyz(300,300), dummy(1)
 c
       common /thestf/ rap00, Tfin, dxv, dyv, dzv, epsilon00, b0, rho00,
      1 e00
@@ -8789,8 +8778,8 @@ c
       common /midle/ imid, kmid, kend, imidpt, kmidpt, klmin, krmax,
      1 kdisp, ipmin, ipmax, imid1
 c
-      dimension px(17175411), py(17175411), pz(17175411), zminp(200,100)
-     1 , zmaxp(200,100)
+      dimension px(85877055), py(85877055), pz(85877055), zminp(300,300)
+     1 , zmaxp(300,300)
 c
       equivalence (aa1(1),u), (aa1(2),v), (aa1(3),w), (aa2(1),capn),
      1 (aa2(2),p), (aa2(3),e), (aa3(1),xmom), (aa3(2),ymom), (aa3(3)
@@ -9231,11 +9220,11 @@ c
      7 smin(2), sumnu(2), t, time, tnc, tout, twopi, w0(2), xdisp, zmom0
      8 (2), convpu, dtmod, dzvfz
 c
-      common /plcm2/ aa2(18325451)
+      common /plcm2/ aa2(91627237)
 c
       common /occp/ numcel, numce2
 c
-      dimension capn(18325447)
+      dimension capn(91627233)
 c
       equivalence (capn,aa2(1))
 c
@@ -9484,10 +9473,10 @@ c
       integer*2 koost
 c      real*4 aa1, u, v, w
 c
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
 c
       common /pscm1/ aa(1), ap, at, day, dt, dto, dtodx, dtody, dtodz,
      1 dx, dxdydz, dy, dz, econ, emevp, emevt, emid3, em0, em0n0, en0,
@@ -9531,17 +9520,16 @@ c
 c
       common /eqqcd/ tq, eq1, pq, sq, anq1, amuq
 c
-      common /plcm7/ kextrn(6108482), koost(6108482)
+      common /plcm7/ kextrn(30542411), koost(30542411)
 c
       common /cnuclr/ hvc, hv2, pi0, amp, amn, amnuc, ak, an0, bin, a2j,
      1 a3j, a4j, a5j, bfer, ph3, ent, ampi, ampi0, deg, bbag, alam, aq1,
      2 aq2, aq3, tcr, agk, degdelt, entdelt, amdelta, ddd, dcoef, alam4,
      3 aq4, aq5, zq1, aaq1, alim, anflav, atq1, atq2, pi2, hv3, qq9, op9
 c     
-      dimension u(18325447), v(18325447), w(18325447), capn(18325447), p
-     1 (18325447), e(18325447), xmom(18325447), ymom(18325447), zmom(183
-     2 25447), px(17175411), py(17175411), pz(17175411), numlvv(50),
-     3 adens(297,496)
+      dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
+     1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233), px(85877055), py(85877055), pz(85877055), numlvv(50),
+     3 adens(300,700)
 c
       equivalence (aa4(1),px), (aa4(2),py), (aa4(3),pz)
 c
@@ -9754,10 +9742,10 @@ c
       implicit real*8 (a-h,o-z)
       integer*2 koost
 c
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
 c
       common /pscm1/ aa(1), ap, at, day, dt, dto, dtodx, dtody, dtodz,
      1 dx, dxdydz, dy, dz, econ, emevp, emevt, emid3, em0, em0n0, en0,
@@ -9781,7 +9769,7 @@ c
       common /other/ eusual, epn0, t0, epion, ppion, edelt, delta, pdelt
      1 , temp, tempkn, eps, xth, epsc, dnsmax, ncycpt, ncycrp, ncycaf
 c
-      common /matric/ storev(895199), idensz(500), edensz(500)
+      common /matric/ storev(929801), idensz(500), edensz(500)
 c
       common /numcmm/ numbk, numcel, numcst, numext, numfz1, numlv,
      1 numout, numouu, numou2, jdim1, kfreez, kfrzcy, press, freez,
@@ -9801,7 +9789,7 @@ c
 c
       common /densav/ densav
 c
-      common /plcm7/ kextrn(6108482), koost(6108482)
+      common /plcm7/ kextrn(30542411), koost(30542411)
 c
       common /option/ cycenx, bcoef, eta, comprs, epsnew, barn, keqost,
      1 icysum, kresrt
@@ -9819,10 +9807,9 @@ c
      2 aq2, aq3, tcr, agk, degdelt, entdelt, amdelta, ddd, dcoef, alam4,
      3 aq4, aq5, zq1, aaq1, alim, anflav, atq1, atq2, pi2, hv3, qq9, op9
 c
-      dimension u(18325447), v(18325447), w(18325447), capn(18325447), p
-     1 (18325447), e(18325447), xmom(18325447), ymom(18325447), zmom(183
-     2 25447), px(17175411), py(17175411), pz(17175411), numlvv(50),
-     3 adens(297,496), koun(27), akoun(27)
+      dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
+     1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233), px(85877055), py(85877055), pz(85877055), numlvv(50),
+     3 adens(300,700), koun(27), akoun(27)
 c
       equivalence (aa4(1),px), (aa4(2),py), (aa4(3),pz)
 c
@@ -10722,12 +10709,12 @@ c     cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       function ijkret (ijk)
       implicit real*8 (a-h,o-z)
 c
-      common /volbuk/ lablbk(305348), cn(305348)
+      common /volbuk/ lablbk(1527120), cn(1527120)
 c
       data modnum /304139/
 c
       k=mod(ijk,modnum)+1
-      do 10 i=k,305348
+      do 10 i=k,1527120
       if (lablbk(i).eq.ijk) go to 40
       if (lablbk(i).eq.-1) go to 30
    10 continue
@@ -11510,12 +11497,11 @@ c     cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
       implicit real*8 (a-h,o-z)
 c
-      common /bucket/ lablbk(305348), ensort(305348), eza(305348), ezb(3
-     1 05348), ezc(305348), ezd(305348), cnzzz(305348)
+      common /bucket/ lablbk(1527120), ensort(1527120), eza(1527120), ezb(1527120), ezc(1527120), ezd(1527120), cnzzz(1527120)
       data modnum /304139/
 c
       k=mod(ijk,modnum)+1
-      do 10 i=k,305348
+      do 10 i=k,1527120
       if (lablbk(i).ne.-1) go to 10
       lablbk(i)=ijk
       ensort(i)=v
@@ -11777,10 +11763,10 @@ c      real*4 aa1
 c
 c  kfrz=1 -> freeze out
 c
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
 c
       common /pscm1/ aa(1), ap, at, day, dt, dto, dtodx, dtody, dtodz,
      1 dx, dxdydz, dy, dz, econ, emevp, emevt, emid3, em0, em0n0, en0,
@@ -11797,7 +11783,7 @@ c
 c
       common /extrmes/ xextrn, xextrx, yextrx, zextrn, zextrx, kox
 c
-      dimension px(17175411), py(17175411), pz(17175411)
+      dimension px(85877055), py(85877055), pz(85877055)
       equivalence (aa4(1),px), (aa4(2),py), (aa4(3),pz)
 c
       num=0
@@ -12062,10 +12048,10 @@ c   Check file is symmetric
 c
       implicit real*8 (a-h,o-z)
 c
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
 c
       common /pscm1/ aa(1), ap, at, day, dt, dto, dtodx, dtody, dtodz,
      1 dx, dxdydz, dy, dz, econ, emevp, emevt, emid3, em0, em0n0, en0,
@@ -12082,14 +12068,13 @@ c
      2 kslab, interp, interv, npart, npartz, nparp, nparpz, krandm,
      3 kbarmx, modcyc, ioptos4
 c
-      dimension px(17175411), py(17175411), pz(17175411)
+      dimension px(85877055), py(85877055), pz(85877055)
 c
       common /midle/ imid, kmid, kend, imidpt, kmidpt, klmin, krmax,
      1 kdisp, ipmin, ipmax, imid1
 c
-      dimension u(18325447), v(18325447), w(18325447), capn(18325447), p
-     1 (18325447), e(18325447), xmom(18325447), ymom(18325447), zmom(183
-     2 25447)
+      dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
+     1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233)
 c
       equivalence (aa1(1),u), (aa1(2),v), (aa1(3),w), (aa2(1),capn),
      1 (aa2(2),p), (aa2(3),e), (aa3(1),xmom), (aa3(2),ymom), (aa3(3)
@@ -12227,10 +12212,10 @@ c
       implicit real*8 (a-h,o-z)
 c      real*4 aa1, u, v, w
 c
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
 c
       common /pscm1/ aa(1), ap, at, day, dt, dto, dtodx, dtody, dtodz,
      1 dx, dxdydz, dy, dz, econ, emevp, emevt, emid3, em0, em0n0, en0,
@@ -12254,17 +12239,16 @@ c
       common /thestf/ rap00, Tfin, dxv, dyv, dzv, epsilon00, b0, rho00,
      1 e00
 c
-      common /misca/ kmove(496), numlvv(52)
+      common /misca/ kmove(700), numlvv(52)
 c
-      common /dmisca/ adens(297,496), eedns(297,496), aplot(297,496),
-     1 bplot(297,496), cplot(297,496)
+      common /dmisca/ adens(300,700), eedns(300,700), aplot(300,700),
+     1 bplot(300,700), cplot(300,700)
 c
       common /midle/ imid, kmid, kend, imidpt, kmidpt, klmin, krmax,
      1 kdisp, ipmin, ipmax, imid1
 c
-      dimension u(18325447), v(18325447), w(18325447), capn(18325447), p
-     1 (18325447), e(18325447), xmom(18325447), ymom(18325447), zmom(183
-     2 25447), px(17175411), py(17175411), pz(17175411)
+      dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
+     1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233), px(85877055), py(85877055), pz(85877055)
 c
       equivalence (aa1(1),u), (aa1(2),v), (aa1(3),w), (aa2(1),capn),
      1 (aa2(2),p), (aa2(3),e), (aa3(1),xmom), (aa3(2),ymom), (aa3(3)
@@ -12427,10 +12411,10 @@ c
       integer*2 koost
 c      real*4 aa1, u, v, w
 c
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
 c
       common /pscm1/ aa(1), ap, at, day, dt, dto, dtodx, dtody, dtodz,
      1 dx, dxdydz, dy, dz, econ, emevp, emevt, emid3, em0, em0n0, en0,
@@ -12442,15 +12426,14 @@ c
      7 smin(2), sumnu(2), t, time, tnc, tout, twopi, w0(2), xdisp, zmom0
      8 (2), convpu, dtmod, dzvfm
 c
-      dimension u(18325447), v(18325447), w(18325447), capn(18325447), p
-     1 (18325447), e(18325447), xmom(18325447), ymom(18325447), zmom(183
-     2 25447), koun(30), akoun(30)
+      dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
+     1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233), koun(30), akoun(30)
 c
       common /rot/ a, b, c
 c
       common /densav/ densav
 c
-      common /plcm7/ kextrn(6108482), koost(6108482)
+      common /plcm7/ kextrn(30542411), koost(30542411)
 c
       external fct1, fun, funx4
 c
@@ -12993,10 +12976,10 @@ c
       implicit real*8 (a-h,o-z)
 c      real*4 aa1, u, v, w
 c
-      common /plcm1/ aa1(18325451)
-      common /plcm2/ aa2(18325451)
-      common /plcm3/ aa3(18325451)
-      common /plcm4/ aa4(17175421)
+      common /plcm1/ aa1(91627237)
+      common /plcm2/ aa2(91627237)
+      common /plcm3/ aa3(91627237)
+      common /plcm4/ aa4(85877065)
 c
       common /pscm1/ aa(1), ap, at, day, dt, dto, dtodx, dtody, dtodz,
      1 dx, dxdydz, dy, dz, econ, emevp, emevt, emid3, em0, em0n0, en0,
@@ -13008,9 +12991,8 @@ c
      7 smin(2), sumnu(2), t, time, tnc, tout, twopi, w0(2), xdisp, zmom0
      8 (2), convpu, dtmod, dzvfm
 c
-      dimension u(18325447), v(18325447), w(18325447), capn(18325447), p
-     1 (18325447), e(18325447), xmom(18325447), ymom(18325447), zmom(183
-     2 25447)
+      dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
+     1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233)
 c
       common /backet/ lbblbk(22), cpnncl(22), convol(22)
 c

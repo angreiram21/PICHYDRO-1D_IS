@@ -1076,6 +1076,10 @@ c     Feb 2005 - changed to read input from fort.100
       dimension px(85877055), py(85877055), pz(85877055), alpha(18)
       real*8 eijk, anijk, pressijk, wijk, uijk, vijk, zmomijk, xmomijk,
      1 ymomijk, pNtot, Etot
+      character*256 hline1, hline2, hline3, hline4, hline5, hline6,
+     1 hline7, hline8
+      integer ios_hdr, ipos, ieq, ieq2
+      logical hash_header
       dimension nypt(700)
       equivalence (aa1(1),u), (aa1(2),v), (aa1(3),w), (aa2(1),capn),
      1 (aa2(2),p), (aa2(3),e), (aa3(1),xmom), (aa3(2),ymom), (aa3(3)
@@ -1132,6 +1136,22 @@ c       write (156,1190)
       if (nparpz.ne.npartz) nparpz=npartz
       open(unit=100,file='../input/fort.100')
       rewind 100
+      read (100,'(A)',iostat=ios_hdr) hline1
+      if (ios_hdr.ne.0) then
+      write(*,*) 'Error reading header from ../input/fort.100'
+      stop 9011
+      endif
+      ipos=1
+ 9110 if (ipos.le.256.and.hline1(ipos:ipos).eq.' ') then
+      ipos=ipos+1
+      go to 9110
+      endif
+      hash_header=.false.
+      if (ipos.le.256) then
+      if (hline1(ipos:ipos).eq.'#') hash_header=.true.
+      endif
+      if (.not.hash_header) then
+      backspace 100
       read (100,1520) epsilon00
       read (100,1520) b0
       read (100,1520) ap
@@ -1140,6 +1160,95 @@ c       write (156,1190)
       read (100,1250) dxv
       read (100,1250) dyv
       read (100,1250) dzv
+      else
+      read (100,'(A)',iostat=ios_hdr) hline2
+      read (100,'(A)',iostat=ios_hdr) hline3
+      read (100,'(A)',iostat=ios_hdr) hline4
+      read (100,'(A)',iostat=ios_hdr) hline5
+      read (100,'(A)',iostat=ios_hdr) hline6
+      read (100,'(A)',iostat=ios_hdr) hline7
+      read (100,'(A)',iostat=ios_hdr) hline8
+      if (ios_hdr.ne.0) then
+      write(*,*) 'Error reading comment header from ../input/fort.100'
+      stop 9012
+      endif
+      ieq=index(hline3,'=')
+      if (ieq.eq.0) then
+      write(*,*) 'Missing epsilon0 in fort.100 header'
+      stop 9013
+      endif
+      read (hline3(ieq+1:),*,iostat=ios_hdr) epsilon00
+      if (ios_hdr.ne.0) then
+      write(*,*) 'Bad epsilon0 value in fort.100 header'
+      stop 9014
+      endif
+      ieq=index(hline3,'b=')
+      if (ieq.eq.0) then
+      write(*,*) 'Missing b value in fort.100 header'
+      stop 9015
+      endif
+      read (hline3(ieq+2:),*,iostat=ios_hdr) b0
+      if (ios_hdr.ne.0) then
+      write(*,*) 'Bad b value in fort.100 header'
+      stop 9016
+      endif
+      ieq=index(hline3,'Ap, At')
+      if (ieq.eq.0) ieq=index(hline3,'Ap,At')
+      if (ieq.eq.0) then
+      write(*,*) 'Missing Ap,At values in fort.100 header'
+      stop 9017
+      endif
+      ieq2=index(hline3(ieq:),'=')
+      if (ieq2.eq.0) then
+      write(*,*) 'Malformed Ap,At field in fort.100 header'
+      stop 9018
+      endif
+      read (hline3(ieq+ieq2:),*,iostat=ios_hdr) ap,at
+      if (ios_hdr.ne.0) then
+      write(*,*) 'Bad Ap,At values in fort.100 header'
+      stop 9019
+      endif
+      ieq=index(hline4,'=')
+      if (ieq.eq.0) then
+      write(*,*) 'Missing beam y0 value in fort.100 header'
+      stop 9020
+      endif
+      read (hline4(ieq+1:),*,iostat=ios_hdr) rap00
+      if (ios_hdr.ne.0) then
+      write(*,*) 'Bad beam y0 value in fort.100 header'
+      stop 9021
+      endif
+      ieq=index(hline5,'dx=')
+      if (ieq.eq.0) then
+      write(*,*) 'Missing dx value in fort.100 header'
+      stop 9022
+      endif
+      read (hline5(ieq+3:),*,iostat=ios_hdr) dxv
+      if (ios_hdr.ne.0) then
+      write(*,*) 'Bad dx value in fort.100 header'
+      stop 9023
+      endif
+      ieq=index(hline5,'dy=')
+      if (ieq.eq.0) then
+      write(*,*) 'Missing dy value in fort.100 header'
+      stop 9024
+      endif
+      read (hline5(ieq+3:),*,iostat=ios_hdr) dyv
+      if (ios_hdr.ne.0) then
+      write(*,*) 'Bad dy value in fort.100 header'
+      stop 9025
+      endif
+      ieq=index(hline5,'dz=')
+      if (ieq.eq.0) then
+      write(*,*) 'Missing dz value in fort.100 header'
+      stop 9026
+      endif
+      read (hline5(ieq+3:),*,iostat=ios_hdr) dzv
+      if (ios_hdr.ne.0) then
+      write(*,*) 'Bad dz value in fort.100 header'
+      stop 9027
+      endif
+      endif
 
       nparp2=nparp**2 ! nparp2=9
 c     To get correct cell sizes ???????

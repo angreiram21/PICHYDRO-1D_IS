@@ -2627,6 +2627,9 @@ c
 c
       integer*2 koost
       INTEGER :: Nambi, Ndisc,Nsurf
+      INTEGER :: NCornCallCycle, NCornSurfCycle, NCornSkipCycle
+      INTEGER :: NCornInvalidCycle
+      LOGICAL :: has_cross_pre, has_cross_post, cube_valid
       common /chktsm/ sumchem,sumtemp,sumentro,nlpc
       common /plcm1/ aa1(18325451)
       common /plcm2/ aa2(18325451)
@@ -4123,6 +4126,10 @@ c
       t00post     = 0.
       xn0prev      = 0.
       xn0post      = 0.
+      NCornCallCycle = 0
+      NCornSurfCycle = 0
+      NCornSkipCycle = 0
+      NCornInvalidCycle = 0
       
       
       do i=1,ibar
@@ -4169,89 +4176,69 @@ c      xn0post = xn0post + gammapost*bardensrfpost(i,j,k)*dx*dy*dz
       xn0post = xn0post + bardenslfpos(i,j,k)*dx*dy*dz
       
       
-      mover=0
-      munder=0  
+      if (i.lt.ibar.and.j.lt.jbar.and.k.lt.kbar) then
 
-       if(enerdensrfpos(i,j,k).gt.ecrit.or.enerdensrfpos(i,j,k+1)
-     1 .gt.ecrit.or.enerdensrfpos(i,j+1,k).gt.ecrit.or.
-     2 enerdensrfpos(i,j+1,k+1).gt.ecrit.or.enerdensrfpos(i+1,j,k).gt.
-     3 ecrit.or.enerdensrfpos(i+1,j,k+1).gt.ecrit.or.enerdensrfpos(i+1
-     4 ,j+1,k).gt.ecrit.or.enerdensrfpos(i+1,j+1,k+1).gt.ecrit) then
+      premin=enerdensrfpre(i,j,k)
+      premax=premin
+      postmin=enerdensrfpos(i,j,k)
+      postmax=postmin
 
+      premin=dmin1(premin,enerdensrfpre(i,j,k+1))
+      premax=dmax1(premax,enerdensrfpre(i,j,k+1))
+      premin=dmin1(premin,enerdensrfpre(i,j+1,k))
+      premax=dmax1(premax,enerdensrfpre(i,j+1,k))
+      premin=dmin1(premin,enerdensrfpre(i,j+1,k+1))
+      premax=dmax1(premax,enerdensrfpre(i,j+1,k+1))
+      premin=dmin1(premin,enerdensrfpre(i+1,j,k))
+      premax=dmax1(premax,enerdensrfpre(i+1,j,k))
+      premin=dmin1(premin,enerdensrfpre(i+1,j,k+1))
+      premax=dmax1(premax,enerdensrfpre(i+1,j,k+1))
+      premin=dmin1(premin,enerdensrfpre(i+1,j+1,k))
+      premax=dmax1(premax,enerdensrfpre(i+1,j+1,k))
+      premin=dmin1(premin,enerdensrfpre(i+1,j+1,k+1))
+      premax=dmax1(premax,enerdensrfpre(i+1,j+1,k+1))
 
+      postmin=dmin1(postmin,enerdensrfpos(i,j,k+1))
+      postmax=dmax1(postmax,enerdensrfpos(i,j,k+1))
+      postmin=dmin1(postmin,enerdensrfpos(i,j+1,k))
+      postmax=dmax1(postmax,enerdensrfpos(i,j+1,k))
+      postmin=dmin1(postmin,enerdensrfpos(i,j+1,k+1))
+      postmax=dmax1(postmax,enerdensrfpos(i,j+1,k+1))
+      postmin=dmin1(postmin,enerdensrfpos(i+1,j,k))
+      postmax=dmax1(postmax,enerdensrfpos(i+1,j,k))
+      postmin=dmin1(postmin,enerdensrfpos(i+1,j,k+1))
+      postmax=dmax1(postmax,enerdensrfpos(i+1,j,k+1))
+      postmin=dmin1(postmin,enerdensrfpos(i+1,j+1,k))
+      postmax=dmax1(postmax,enerdensrfpos(i+1,j+1,k))
+      postmin=dmin1(postmin,enerdensrfpos(i+1,j+1,k+1))
+      postmax=dmax1(postmax,enerdensrfpos(i+1,j+1,k+1))
 
-      if(enerdensrfpre(i,j,k).gt.ecrit.or.enerdensrfpre(i,j,k+1).gt.
-     5 ecrit
-     6 .or.enerdensrfpre(i,j+1,k).gt.ecrit.or.enerdensrfpre(i,j+1,
-     7 k+1).gt.ecrit.or.enerdensrfpre(i+1,j,k).gt.ecrit.or.
-     8 enerdensrfpre(i+1,j,k+1).gt.ecrit.or.enerdensrfpre(i+1,j+1,k)
-     9 .gt.ecrit.or.enerdensrfpre(i+1,j+1,k+1).gt.ecrit) then
+      has_cross_pre=(premin.le.ecrit.and.premax.ge.ecrit.and.
+     1 (premin.lt.ecrit.or.premax.gt.ecrit))
+      has_cross_post=(postmin.le.ecrit.and.postmax.ge.ecrit.and.
+     1 (postmin.lt.ecrit.or.postmax.gt.ecrit))
 
-c       write(942,*)'post',enerdensrfpost(i,j,k)-ecrit,
-c      1 enerdensrfpost(i,j,k+1)-ecrit,
-c      1 enerdensrfpost(i,j+1,k)-ecrit,
-c      2 enerdensrfpost(i,j+1,k+1)-ecrit,
-c      1 enerdensrfpost(i+1,j,k)-ecrit,
-c      2 enerdensrfpost(i+1,j,k+1)-ecrit,
-c      2 enerdensrfpost(i+1,j+1,k)-ecrit,
-c      3 enerdensrfpost(i+1,j+1,k+1)-ecrit
-c
-c       write(942,*)'prev',enerdensrfprev(i,j,k)-ecrit,
-c      6 enerdensrfprev(i,j,k+1)-ecrit,
-c      6 enerdensrfprev(i,j+1,k)-ecrit,
-c      7 enerdensrfprev(i,j+1,k+1)-ecrit,
-c      7 enerdensrfprev(i+1,j,k)-ecrit,
-c      9 enerdensrfprev(i+1,j,k+1)-ecrit,
-c      8 enerdensrfprev(i+1,j+1,k)-ecrit,
-c      & enerdensrfprev(i+1,j+1,k+1)-ecrit
-
-      mover=1
-
-      endif
-
-      endif
-
-      if(     enerdensrfpos(i,j,k).le.ecrit
-     1 .or.enerdensrfpos(i,j,k+1).le.ecrit.or.enerdensrfpos(i,j+1,k)
-     2 .le.ecrit.or.enerdensrfpos(i,j+1,k+1).le.ecrit.or.enerdensrfpos
-     3 (i+1,j,k).le.ecrit.or.enerdensrfpos(i+1,j,k+1).le.ecrit.or.
-     4 enerdensrfpos(i+1,j+1,k).le.ecrit.or.enerdensrfpos(i+1,j+1,k+1)
-     5 .le.ecrit) then
-
-
-      if (enerdensrfpre(i,j,k).le.ecrit.or.enerdensrfpre(i,j
-     6 ,k+1).le.ecrit.or.enerdensrfpre(i,j+1,k).le.ecrit.or.
-     7 enerdensrfpre(i,j+1,k+1).le.ecrit.or.enerdensrfpre(i+1,j,k).le.
-     8 ecrit.or.enerdensrfpre(i+1,j,k+1).le.ecrit.or.enerdensrfpre(i+1
-     9 ,j+1,k).le.ecrit.or.enerdensrfpre(i+1,j+1,k+1).le.ecrit)then
-
-      munder=1
-
-      end if
-      end if
-
-      if(mover.eq.1 .and.munder.eq.1)then
-c       write(941,*) enerdensrfpost(i,j,k)-ecrit,
-c      1 enerdensrfpost(i,j,k+1)-ecrit,
-c      1 enerdensrfpost(i,j+1,k)-ecrit,
-c      2 enerdensrfpost(i,j+1,k+1)-ecrit,
-c      1 enerdensrfpost(i+1,j,k)-ecrit,
-c      2 enerdensrfpost(i+1,j,k+1)-ecrit,
-c      2 enerdensrfpost(i+1,j+1,k)-ecrit,
-c      3 enerdensrfpost(i+1,j+1,k+1)-ecrit,
-c      5 enerdensrfprev(i,j,k)-ecrit,
-c      6 enerdensrfprev(i,j,k+1)-ecrit,
-c      6 enerdensrfprev(i,j+1,k)-ecrit,
-c      7 enerdensrfprev(i,j+1,k+1)-ecrit,
-c      7 enerdensrfprev(i+1,j,k)-ecrit,
-c      9 enerdensrfprev(i+1,j,k+1)-ecrit,
-c      8 enerdensrfprev(i+1,j+1,k)-ecrit,
-c      & enerdensrfprev(i+1,j+1,k+1)-ecrit
-
+      if (has_cross_pre.or.has_cross_post) then
       call fillcube(i,j,k,1,enerdensrfpre,enerdensrfpos,hypercube)
+
+      cube_valid=.true.
+      do it=0,1
+      do ix=0,1
+      do iy=0,1
+      do iz=0,1
+      if (isnan(HyperCube(it,ix,iy,iz))) cube_valid=.false.
+      if (dabs(HyperCube(it,ix,iy,iz)).ge.huge(1d0)) cube_valid=.false.
+      enddo
+      enddo
+      enddo
+      enddo
+
+      if (cube_valid) then
+      NCornCallCycle=NCornCallCycle+1
 c                CALLING CORNELIUS SUBROUTINE
       CALL Cornelius(ecrit,hypercube,dSigma,Nsurf,Vmid,dt,dx,
      1 dy,dz,Nambi,Ndisc)
+      NCornSurfCycle=NCornSurfCycle+Nsurf
 c      if (Nsurf .gt. 1) then
 c      write (*,*) 'Nsurf= ',Nsurf
 c     endif
@@ -4354,6 +4341,12 @@ c     :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   293 continue
       enddo
 
+      else
+      NCornInvalidCycle=NCornInvalidCycle+1
+      endif
+      else
+      NCornSkipCycle=NCornSkipCycle+1
+      endif
       endif
       enddo
       enddo
@@ -4361,6 +4354,9 @@ c     :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       
       totenercornelius = totenercornelius + enetot
       totbarcornelius  = totbarcornelius  + bardenstot
+      write(*,*) 'Cornelius cyc=',ncyc,' calls=',NCornCallCycle,
+     1 ' NsTot=',NCornSurfCycle,' skipped=',NCornSkipCycle,
+     2 ' invalid=',NCornInvalidCycle,' Nambi=',Nambi,' Ndisc=',Ndisc
 
       write(*,*) "bardenstot_fo   = ",totbarcornelius
       write(*,*) "enetot_fo       = ",totenercornelius
@@ -13363,4 +13359,3 @@ c  assign 190 to kr7
       go to 50
 c
       end
-

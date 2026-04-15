@@ -2741,8 +2741,11 @@ c
       INTEGER :: NCornInvalidCycle
       INTEGER :: IProgLen, IProgFill, ip, ITermCols
       INTEGER :: iEmax, jEmax, kEmax, iPmax, jPmax, kPmax
+      INTEGER :: IAdaptiveFO, NInactiveFO, NInactiveReq, NMinFOCheck
+      INTEGER :: ICycleExtendStep, ICycleMaxHard, IClosedFO
       LOGICAL :: has_cross_pre, has_cross_post, cube_valid
       REAL*8 ProgFrac, ProgPerc, maxEcyc, maxPcyc
+      REAL*8 EPSFOE, EPSFOB
       CHARACTER*122 ProgBar
       CHARACTER*5 EscGreen
       CHARACTER*4 EscReset
@@ -2823,6 +2826,9 @@ c
       common /miscnw/ cnfst, numfst
       common /corneliuss/ totenercornelius,totpxcornelius,
      1 totpycornelius,totpzcornelius,totbarcornelius
+      common /foclose/ EPSFOE, EPSFOB, IAdaptiveFO, NInactiveFO,
+     1 NInactiveReq, NMinFOCheck, ICycleExtendStep, ICycleMaxHard,
+     2 IClosedFO
       dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
      1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233)
      
@@ -3587,6 +3593,16 @@ C   time problem solved
       endif
       timel=gamt*timedt
       if (gamp.gt.1.01.and.gamt.eq.0.) write (156,1460) timel
+      IAdaptiveFO=1
+      NInactiveFO=0
+      IClosedFO=0
+      NInactiveReq=20
+      NMinFOCheck=40
+      ICycleExtendStep=50
+      ICycleMaxHard=max0(3*icysum,icysum+200)
+      if (ICycleMaxHard.lt.icysum) ICycleMaxHard=icysum
+      EPSFOE=1d-6
+      EPSFOB=1d-8
       if (icysum.eq.0) go to 530
 c
 c _____________________________________________________________________
@@ -4537,10 +4553,27 @@ c     :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
      1 totenercornelius,rnegbflow,posbflow,bardenstot,
      2 totbarcornelius
 
-      if (ncyc > 0 .and. modcyc .eq. 0) then
-      if (enetot == 0. .and. bardenstot == 0. ) then
-      write (*,*) 'Particlization hypersurface is closed!'
+      if (IAdaptiveFO.ne.0.and.ncyc.ge.NMinFOCheck) then
+      if (dabs(enetot).gt.EPSFOE.or.dabs(bardenstot).gt.EPSFOB.or.
+     1 NCornSurfCycle.gt.0) then
+      NInactiveFO=0
+      IClosedFO=0
+      else
+      NInactiveFO=NInactiveFO+1
+      if (NInactiveFO.eq.NInactiveReq) then
+      IClosedFO=1
+      write (*,*) 'FO close candidate confirmed at cyc=',ncyc,
+     1 ' inactive_cycles=',NInactiveFO,' enetot=',enetot,
+     2 ' bardenstot=',bardenstot,' Nsurf=',NCornSurfCycle
       endif
+      endif
+      endif
+
+      if (ncyc.gt.0.and.modcyc.eq.0.and.IAdaptiveFO.ne.0.and.
+     1 (mod(ncyc,10).eq.0.or.ncyc.le.NMinFOCheck.or.IClosedFO.eq.1))
+     2 then
+      write (*,*) 'FO close monitor cyc=',ncyc,' inactive=',
+     1 NInactiveFO,'/',NInactiveReq,' closed=',IClosedFO
       endif
 C      write(339,*) ncyc,enetot,rnegene,posene,bardenstot,rnegbflow,
 c     1 posbflow
@@ -8614,6 +8647,10 @@ c
 c
       common /pscmz/ zz
 c
+      common /foclose/ EPSFOE, EPSFOB, IAdaptiveFO, NInactiveFO,
+     1 NInactiveReq, NMinFOCheck, ICycleExtendStep, ICycleMaxHard,
+     2 IClosedFO
+      
       common /option/ cycenx, bcoef, eta, comprs, epsnew, barn, keqost,
      1 icysum, kresrt
 c
@@ -8647,7 +8684,23 @@ c
 c
       if (t+1.e-7.gt.tout) go to 50
       if (ncyc.lt.2) go to 60
-   10 if (ncyc.ge.icysum) isume=1
+   10 if (IAdaptiveFO.ne.0.and.ncyc.ge.NMinFOCheck.and.IClosedFO.eq.1)
+     1 isume=1
+      if (ncyc.ge.icysum) then
+      if (IAdaptiveFO.ne.0.and.IClosedFO.eq.0.and.ncyc.ge.NMinFOCheck
+     1 .and.icysum.lt.ICycleMaxHard) then
+      icysum=min0(icysum+ICycleExtendStep,ICycleMaxHard)
+      write (*,*) 'Extending icysum to',icysum,' at cyc=',ncyc,
+     1 ' (FO not closed yet)'
+      else
+      isume=1
+      if (IAdaptiveFO.ne.0.and.IClosedFO.eq.0.and.
+     1 icysum.ge.ICycleMaxHard) then
+      write (*,*) 'Reached ICycleMaxHard=',ICycleMaxHard,
+     1 ' without robust FO closure'
+      endif
+      endif
+      endif
       if (isume.eq.1) go to 100
 c      if (mod(ncyc,5).eq.0.and.ncyc.ge.50) go to 100
 c

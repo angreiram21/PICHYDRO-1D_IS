@@ -6047,9 +6047,20 @@ c
       uijk=repx*xmom(ijk)
       vijk=repx*ymom(ijk)
       wijk=repx*zmom(ijk)
-      if (uijk**2+vijk**2+wijk**2 .gt. 1.) then
-      write (*,*) 'v^2>1'
-      stop 5292
+      vel2=uijk**2+vijk**2+wijk**2
+      if (isnan(vel2).or.vel2.ge.1.d0) then
+      write (*,*) 'v^2>=1 corrected (5292) cyc/i/j/k=',ncyc,i,j,k,
+     1 ' vel2=',vel2
+      if (isnan(vel2).or.vel2.le.0.d0) then
+      uijk=0.d0
+      vijk=0.d0
+      wijk=0.d0
+      else
+      vfac=dsqrt(0.9999d0/vel2)
+      uijk=uijk*vfac
+      vijk=vijk*vfac
+      wijk=wijk*vfac
+      endif
       endif
 
 c      write (156,750) usq,gxx,epsx,presx,uijk,vijk,wijk,xia
@@ -6181,9 +6192,20 @@ c       if (gxx.gt.fast) write (156,*) ' faster',gxx,fast
       uijk=dsqrt(usqrd)*xmom(ijk)/amom
       vijk=dsqrt(usqrd)*ymom(ijk)/amom
       wijk=dsqrt(usqrd)*zmom(ijk)/amom
-      if (uijk**2+vijk**2+wijk**2 .gt. 1.) then
-      write (*,*) 'v^2>1'
-      stop 5426
+      vel2=uijk**2+vijk**2+wijk**2
+      if (isnan(vel2).or.vel2.ge.1.d0) then
+      write (*,*) 'v^2>=1 corrected (5426) cyc/i/j/k=',ncyc,i,j,k,
+     1 ' vel2=',vel2
+      if (isnan(vel2).or.vel2.le.0.d0) then
+      uijk=0.d0
+      vijk=0.d0
+      wijk=0.d0
+      else
+      vfac=dsqrt(0.9999d0/vel2)
+      uijk=uijk*vfac
+      vijk=vijk*vfac
+      wijk=wijk*vfac
+      endif
       endif
   280 if (iphs3.eq.1) go to 290
       if (amom.ne.0.) uij=dsqrt(usqrd)*xmom(ijk)/amom
@@ -8336,9 +8358,20 @@ c  koost determines if a cell is coasting
       uijk=u(ijk)*adjflx
       vijk=v(ijk)*adjflx
       wijk=w(ijk)*adjflx
-      if (uijk**2+vijk**2+wijk**2 .gt. 1.) then
-      write (*,*) 'v^2>1'
-      stop 7034
+      vel2=uijk**2+vijk**2+wijk**2
+      if (isnan(vel2).or.vel2.ge.1.d0) then
+      write (*,*) 'v^2>=1 corrected (7034) cyc/i/j/k=',ncyc,i,j,k,
+     1 ' vel2=',vel2,' u,v,w=',uijk,vijk,wijk
+      if (isnan(vel2).or.vel2.le.0.d0) then
+      uijk=0.d0
+      vijk=0.d0
+      wijk=0.d0
+      else
+      vfac=dsqrt(0.9999d0/vel2)
+      uijk=uijk*vfac
+      vijk=vijk*vfac
+      wijk=wijk*vfac
+      endif
       endif
       pip=0.
       pim=0.
@@ -10918,9 +10951,20 @@ c
       uijk=repx*xmom(ijk)
       vijk=repx*ymom(ijk)
       wijk=repx*zmom(ijk)
-      if (uijk**2+vijk**2+wijk**2 .gt. 1.) then
-      write (*,*) 'v^2>1'
-      stop 9579
+      vel2=uijk**2+vijk**2+wijk**2
+      if (isnan(vel2).or.vel2.ge.1.d0) then
+      write (*,*) 'v^2>=1 corrected (9579) cyc/i/j/k=',ncyc,i,j,k,
+     1 ' vel2=',vel2
+      if (isnan(vel2).or.vel2.le.0.d0) then
+      uijk=0.d0
+      vijk=0.d0
+      wijk=0.d0
+      else
+      vfac=dsqrt(0.9999d0/vel2)
+      uijk=uijk*vfac
+      vijk=vijk*vfac
+      wijk=wijk*vfac
+      endif
       endif
 c       if (jdim1.ne.3.and.vijk.ne.0.) write (156,*) 'vijk',i,j,k,ijk,
 c      1 iphs3,ymom(ijk),vijk

@@ -84,21 +84,79 @@ unit handling is internally consistent only if the full cycle
 variables are transformed between intensive and extensive forms during
 intermediate phases.
 
+\subsection{How \texttt{dx}, \texttt{dy}, \texttt{dz}, and \texttt{dt} are computed}
+For the active event-by-event workflow (\texttt{kslab=8}), the spatial cell
+sizes are taken directly from \texttt{fort.100} inside \texttt{readinput}:
+\begin{align*}
+dx &= dxv,\\
+dy &= dyv,\\
+dz &= dzv.
+\end{align*}
+
+Then, in \texttt{picrel}, the time-step pipeline is:
+\begin{align*}
+dtote &= 1.25 \cdot dz \quad (\text{because } kslab>0),\\
+dtote &\leftarrow dtote \cdot dtmod,\\
+dto &= \texttt{aint}(10\cdot dtote)\cdot 0.1
+\end{align*}
+with extra refinement for small values:
+\begin{itemize}
+\item if \texttt{dtote < 0.1}: \texttt{dto = aint(100*dtote)*0.01};
+\item if \texttt{dtote < 0.01}: \texttt{dto = aint(1000*dtote)*0.001};
+\item if \texttt{dtote < 0.001}: \texttt{dto = aint(10000*dtote)*0.0001};
+\item if \texttt{dtote < 0.0001}: \texttt{dto = aint(100000*dtote)*0.00001}.
+\end{itemize}
+Finally:
+\begin{align*}
+dt &= 0.2 \cdot dto,\\
+dtodx &= dt/dx,\quad dtody = dt/dy,\quad dtodz = dt/dz.
+\end{align*}
+
+Example (typical values in this branch): if \texttt{dz=0.638} and
+\texttt{dtmod=0.2}, then
+\begin{align*}
+dtote &\approx 1.25\cdot 0.638\cdot 0.2 = 0.1595,\\
+dto &= 0.1,\\
+dt &= 0.02.
+\end{align*}
+So, in this case, \texttt{dz > dt} is satisfied.
+
 \section{Input Files}
 \subsection{\texttt{input/inhydro}}
-The code reads \texttt{inhydro} at startup. In the current mode, relevant lines are:
-\begin{longtable}{|p{2cm}|p{11cm}|}
+The code reads \texttt{inhydro} at startup from unit 155. For the current
+workflow (\texttt{kslab=8}), each line and column means:
+
+\begin{longtable}{|p{1.2cm}|p{1.0cm}|p{3.0cm}|p{6.5cm}|}
 \hline
-Line & Meaning \\\hline
-1 & \texttt{ioptos1 ioptos2 ioptos3 ioptos4 kdebug kslab} \\\hline
-2 & run identifier string \\\hline
-3 & output file name \\\hline
-4 & initial state tag/file name string (legacy field, still read) \\\hline
-5 & \texttt{keqost icysum krandm tnc} \\\hline
-6 & \texttt{jdim1} (geometry dimensional flag) \\\hline
-7 & for \texttt{kslab>3}: \texttt{porton dtmod ncycpt ncycrp ncycaf} \\\hline
-8 & \texttt{npart npartz} (read in \texttt{readinput}) \\\hline
+Line & Col. & Variable & Meaning \\\hline
+1 & 1 & \texttt{ioptos1} & Output-control flag (diagnostic stream selection). \\\hline
+1 & 2 & \texttt{ioptos2} & Output-control flag (legacy/optional prints). \\\hline
+1 & 3 & \texttt{ioptos3} & Output-control flag (selected profile dumps). \\\hline
+1 & 4 & \texttt{ioptos4} & Output-control flag for per-cycle field dumps (\texttt{fort.10}/\texttt{fort.118}). \\\hline
+1 & 5 & \texttt{kdebug} & Debug verbosity flag; enables extra consistency checks/prints. \\\hline
+1 & 6 & \texttt{kslab} & Initial-state mode selector; this code path requires \texttt{kslab=8}. \\\hline
+2 & 1 & \texttt{id} & Run identifier string (printed in headers, used for bookkeeping). \\\hline
+3 & 1 & \texttt{outfile} & Main text output filename (opened as unit 156). \\\hline
+4 & 1 & \texttt{instat} & Legacy initial-state tag/filename (still parsed and stored). \\\hline
+5 & 1 & \texttt{keqost} & Equation-of-state selector (negative values use tabulated QCD/chiral branches in this version). \\\hline
+5 & 2 & \texttt{icysum} & Total number of hydro cycles. \\\hline
+5 & 3 & \texttt{krandm} & Marker-placement mode (randomized vs structured placement, depending on branch). \\\hline
+5 & 4 & \texttt{tnc} & Spatial scale/discretization control used during initialization. \\\hline
+6 & 1 & \texttt{jdim1} & Dimensional flag (\texttt{1} effectively 2D in code logic, \texttt{>1} full 3D). \\\hline
+7 & 1 & \texttt{porton} & Transport/initialization control parameter used in \texttt{kslab>3} branch. \\\hline
+7 & 2 & \texttt{dtmod} & Time-step multiplier; code enforces \texttt{0 < dtmod <= 1}. \\\hline
+7 & 3 & \texttt{ncycpt} & Frequency (in cycles) for particle-position style outputs. \\\hline
+7 & 4 & \texttt{ncycrp} & Frequency (in cycles) for report/print blocks. \\\hline
+7 & 5 & \texttt{ncycaf} & Final-cycle control parameter (fallback to 100 if zero). \\\hline
+8 & 1 & \texttt{npart} & Marker subdivision count in transverse directions per cell. \\\hline
+8 & 2 & \texttt{npartz} & Marker subdivision count in longitudinal (\texttt{z}) direction per cell. \\\hline
 \end{longtable}
+
+For other \texttt{kslab} values, line 7 has a different schema:
+\begin{itemize}
+\item \texttt{kslab<=3}: \texttt{nparp nparpz dtmod ncycpt ncycrp ncycaf}
+\item \texttt{kslab=0}: \texttt{npart npartz nparp nparpz krandm dtmod ncycpt ncycrp ncycaf}
+\end{itemize}
 
 Current repository example:
 \begin{verbatim}
@@ -198,6 +256,63 @@ z_{n+1} &= z_n + w_{\text{eff}}\,dt/dz;
 \item Update flow velocities \texttt{u,v,w} and thermodynamic diagnostics
       (temperature, chemical potential, entropy density).
 \end{itemize}
+
+\subsubsection{Late-time numerical stabilization (implemented)}
+To reduce late-cycle numerical artifacts in dilute peripheral cells, the
+\texttt{phase3} routine now applies explicit floors:
+\begin{align*}
+e_{\mathrm{floor}} &= 1.0\ \mathrm{MeV/fm^3},\\
+n_{\mathrm{floor}} &= 10^{-4}\ \mathrm{fm^{-3}}.
+\end{align*}
+
+The implemented logic is:
+\begin{itemize}
+\item Before local reconstruction, if a cell satisfies
+      \texttt{e <= efloor} or \texttt{capn <= nfloor}, the code treats it as
+      dilute vacuum for the hydro update and sets:
+      \texttt{e, capn, p, xmom, ymom, zmom, u, v, w = 0}.
+\item In the \texttt{capn=0} cleanup branch (formerly reported as
+      \texttt{phase3: capn=0, Missing e}), the threshold check was updated to
+      use the same floors, and momentum components are also zeroed.
+\item In the \texttt{v\^2>=1 corrected (7034)} branch, cells already below
+      floors are forced to \texttt{u=v=w=0} directly, avoiding repeated
+      superluminal corrections from near-vacuum noise.
+\end{itemize}
+
+This stabilization is intended to act in the very dilute tail and not in the
+physical freeze-out layer. For this setup (\texttt{ecrit=500 MeV/fm$^3$}),
+\texttt{efloor=1 MeV/fm$^3$} is far below the particlization criterion, so the
+expected impact on hypersurface geometry is small; nevertheless, freeze-out
+integrals should always be revalidated after such changes.
+
+Additionally, the late-output routine \texttt{outfin} was hardened to avoid
+artificial job termination in dilute cells:
+\begin{itemize}
+\item A local baryon-density floor was introduced:
+      \texttt{BFLOOR\_OUT = 1e-4 fm$^{-3}$}.
+\item Cells with \texttt{capn <= BFLOOR\_OUT} are skipped in the block that
+      computes \texttt{flux(1..6)} terms divided by \texttt{cnth=capn*dxdydz},
+      reducing divide-by-zero and denormal issues in late cycles.
+\item The former hard stop
+      \texttt{if (uvwijk >= 1) stop 2156} was replaced by a local correction:
+      if \texttt{v$^2$} is invalid or superluminal, velocities are either reset
+      to zero (invalid/non-positive case) or rescaled to \texttt{v$^2$=0.9999}
+      and the run continues.
+\end{itemize}
+
+The adaptive freeze-out closure counter logic (\texttt{inactive} cycles required
+for closure) was not modified. However, the hard maximum-cycle cap used by
+adaptive freeze-out extension was updated to scale with \texttt{dtmod}:
+\begin{align*}
+f_{dt} &= 0.5/dtmod,\\
+\texttt{ICycleMaxHard} &= \max\left(
+\left\lfloor 3\,icysum\,f_{dt}\,1.5 \right\rfloor,\,
+icysum + \left\lfloor 200\,f_{dt}\,1.5 \right\rfloor
+\right).
+\end{align*}
+This increases the allowed number of late-time cycles when using smaller
+timesteps (for example \texttt{dtmod=0.2}), reducing premature termination
+before robust freeze-out closure.
 
 \section{Interpolation and Occupancy Logic}
 \subsection{\texttt{wtnwt}}

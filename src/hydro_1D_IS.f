@@ -3599,7 +3599,9 @@ C   time problem solved
       NInactiveReq=20
       NMinFOCheck=40
       ICycleExtendStep=50
-      ICycleMaxHard=max0(3*icysum,icysum+200)
+      fdt=0.5d0/dtmod
+      ICycleMaxHard=max0(int(3.d0*icysum*fdt*1.5d0),
+     1 icysum+int(200.d0*fdt*1.5d0))
       if (ICycleMaxHard.lt.icysum) ICycleMaxHard=icysum
       EPSFOE=1d-6
       EPSFOB=1d-8
@@ -5536,6 +5538,7 @@ c
       implicit real*8 (a-h,o-z)
 c       real*4 aa1, u, v, w
       integer*2 koost
+      parameter (EFLOOR=1.d0, BFLOOR=1.d-4)
 c     
       common /chktsm/ sumchem,sumtemp,sumentro,nlpc
       common /hxi33/ hxi3a, xi, hxi
@@ -5731,12 +5734,15 @@ c      1 capn(j)/pnu(1),enold,capncl(i),e(j),eeold,encell(i),pnu(1)
       suume=suume+capncl(i)
       suumx=suumx+xmomcl(i)
       suumz=suumz+zmomcl(i)
-      if (capn(j).gt.0.000000001) go to 100
-      if (dabs(e(j)).gt.0.000000001) write (*,640) j,e(j),capn(j),i
+      if (capn(j).gt.BFLOOR) go to 100
+      if (dabs(e(j)).gt.EFLOOR) write (*,640) j,e(j),capn(j),i
      1 ,capncl(i),encell(i)
 c
       e(j)=0.
       capn(j)=0.
+      xmom(j)=0.
+      ymom(j)=0.
+      zmom(j)=0.
       u(j)=0.
       v(j)=0.
       w(j)=0.
@@ -8322,6 +8328,18 @@ c
       do 410 j=1,jbar
       do 400 i=1,ibar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
+      if (e(ijk).le.EFLOOR.or.capn(ijk).le.BFLOOR) then
+      e(ijk)=0.d0
+      capn(ijk)=0.d0
+      p(ijk)=0.d0
+      xmom(ijk)=0.d0
+      ymom(ijk)=0.d0
+      zmom(ijk)=0.d0
+      u(ijk)=0.d0
+      v(ijk)=0.d0
+      w(ijk)=0.d0
+      go to 400
+      endif
       if (capn(ijk).eq.0.) go to 400
       if (capn(ijk).lt.0.00001) then
 c         if (e(ijk).gt.0.01) write (156,*) ' ENERGY
@@ -8358,6 +8376,12 @@ c  koost determines if a cell is coasting
       uijk=u(ijk)*adjflx
       vijk=v(ijk)*adjflx
       wijk=w(ijk)*adjflx
+      if (e(ijk).le.EFLOOR.or.capn(ijk).le.BFLOOR) then
+      uijk=0.d0
+      vijk=0.d0
+      wijk=0.d0
+      vel2=0.d0
+      else
       vel2=uijk**2+vijk**2+wijk**2
       if (isnan(vel2).or.vel2.ge.1.d0) then
       write (*,*) 'v^2>=1 corrected (7034) cyc/i/j/k=',ncyc,i,j,k,
@@ -8371,6 +8395,7 @@ c  koost determines if a cell is coasting
       uijk=uijk*vfac
       vijk=vijk*vfac
       wijk=wijk*vfac
+      endif
       endif
       endif
       pip=0.
@@ -8650,6 +8675,8 @@ c     cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
       implicit real*8 (a-h,o-z)
 c
+      parameter (BFLOOR_OUT=1.d-4)
+
       common /plcm1/ aa1(91627237)
       common /plcm2/ aa2(91627237)
       common /plcm3/ aa3(91627237)
@@ -8783,7 +8810,7 @@ c       /vladimir
       do 140 j=1,jbar
       do 130 i=1,ibar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 130
+      if (capn(ijk).le.BFLOOR_OUT) go to 130
       ijkz=(ijbar*(k-1)+ibar*(j-1)+i-1)+1
       cnth=capn(ijk)*dxdydz
       cz1=cz1+cnth
@@ -8802,7 +8829,21 @@ c       /vladimir
       flux(6)=flux(6)+2*zmom(ijk)*zmom(ijk)/cnth
       uvwijk=u(ijk)*u(ijk)+v(ijk)*v(ijk)+w(ijk)*w(ijk)
 c       if (uvwijk.ge.1.) write (156,390) u(ijk),v(ijk),w(ijk),i,j,k
-      if (uvwijk.ge.1.) stop 2156
+      if (isnan(uvwijk).or.uvwijk.ge.1.d0) then
+      write (*,*) 'v^2>=1 corrected (2156) cyc/i/j/k=',ncyc,i,j,k,
+     1 ' vel2=',uvwijk,' u,v,w=',u(ijk),v(ijk),w(ijk)
+      if (isnan(uvwijk).or.uvwijk.le.0.d0) then
+      u(ijk)=0.d0
+      v(ijk)=0.d0
+      w(ijk)=0.d0
+      else
+      vfac=dsqrt(0.9999d0/uvwijk)
+      u(ijk)=u(ijk)*vfac
+      v(ijk)=v(ijk)*vfac
+      w(ijk)=w(ijk)*vfac
+      endif
+      uvwijk=u(ijk)*u(ijk)+v(ijk)*v(ijk)+w(ijk)*w(ijk)
+      endif
 c       magas v1, v2
       ptMijk=dsqrt(xmom(ijk)**2+ymom(ijk)**2)
       if (ptMijk.eq.0.) go to 130

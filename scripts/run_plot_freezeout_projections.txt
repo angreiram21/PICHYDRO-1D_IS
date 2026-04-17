@@ -1,0 +1,1 @@
+python3 scripts/plot_freezeout_projections.py -i output/freezeout.dat -o plots/freezeout_projections.png --cut 0.1

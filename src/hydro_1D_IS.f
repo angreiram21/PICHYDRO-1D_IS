@@ -7,7 +7,7 @@ c   krandm parameter is now read from inhydro file: line 5, colunm 3
       implicit real*8 (a-h,o-z)
       parameter (maxfsiz=100)
       character infile*(maxfsiz), outfile*(maxfsiz), instat*(maxfsiz),
-     1 instaf
+     1 instaf, outpath*(maxfsiz+7)
       character kstrng, iss, isu, isr, ibl
 c
       common /files/ outfile, infile, linfile, loutfile
@@ -88,7 +88,8 @@ c                  READING FROM INHYDRO FILE
       innf=3
       read (155,370,err=300) outfile
       loutfile=mylenc(outfile)
-      open (156,file=outfile(1:loutfile),status='unknown',err=200)
+      outpath='output/'//outfile(1:loutfile)
+      open (156,file=outpath(1:loutfile+7),status='unknown',err=200)
 c       write (156,*) ioptos1,ioptos2,ioptos3,ioptos4,kdebug,kslab
 c       write (156,320) id
 c       write (156,530)
@@ -9012,17 +9013,18 @@ c
      2 kslab, interp, interv, npart, npartz, nparp, nparpz, krandm,
      3 kbarmx, modcyc, ioptos4
 c
-      open (unit=156,file='fort.6',status='unknown')
-      open (unit=118,file='fort_118.dat',status='unknown')
-      open (unit=333,file='fort.333',status='unknown')
-      open (unit=221,file='oscfil.dat',status='unknown')
-      open (unit=334,file='fort.334',status='unknown')
-      open (unit=336,file='fort.336',status='unknown')
-      open (unit=337,file='fort.337',status='unknown')
-      open (unit=338,file='fort.338',status='unknown')
-      open (unit=339,file='fort.339',status='unknown')
-      open (unit=889,file='fort.889',status='unknown')
-      open (unit=949,file='freezout.dat',status='unknown')
+      call system('mkdir -p output')
+      open (unit=156,file='output/fort.6',status='unknown')
+      open (unit=118,file='output/fort_118.dat',status='unknown')
+      open (unit=333,file='output/fort.333',status='unknown')
+      open (unit=221,file='output/oscfil.dat',status='unknown')
+      open (unit=334,file='output/fort.334',status='unknown')
+      open (unit=336,file='output/fort.336',status='unknown')
+      open (unit=337,file='output/fort.337',status='unknown')
+      open (unit=338,file='output/fort.338',status='unknown')
+      open (unit=339,file='output/fort.339',status='unknown')
+      open (unit=889,file='output/fort.889',status='unknown')
+      open (unit=949,file='output/freezout.dat',status='unknown')
       return
    30 continue
       stop 1030
@@ -10003,7 +10005,7 @@ c       pause
       endif
 
 
-      open (unit=333,file='check12281',status='unknown')
+      open (unit=333,file='output/check12281',status='unknown')
 c      write(333,*) i,j,k,pijk,press,temp,chem,entro
 c       if (az.eq.0.) write (156,*) ' az=0-x',i,j,k,az,z
 c       if (pijk.lt.0.) write (156,*) ' interx',pijk,pq,az,z

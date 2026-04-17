@@ -257,33 +257,22 @@ z_{n+1} &= z_n + w_{\text{eff}}\,dt/dz;
       (temperature, chemical potential, entropy density).
 \end{itemize}
 
-\subsubsection{Late-time numerical stabilization (implemented)}
-To reduce late-cycle numerical artifacts in dilute peripheral cells, the
-\texttt{phase3} routine now applies explicit floors:
-\begin{align*}
-e_{\mathrm{floor}} &= 1.0\ \mathrm{MeV/fm^3},\\
-n_{\mathrm{floor}} &= 10^{-4}\ \mathrm{fm^{-3}}.
-\end{align*}
-
-The implemented logic is:
+\subsubsection{Late-time numerical stabilization (current status)}
+After testing, the aggressive low-density/low-energy floors inside
+\texttt{phase3} were rolled back because they introduced pathological behavior
+from the first cycle (\texttt{phase3: Missing e} inflation and early
+\texttt{phase2} failures). The current \texttt{phase3} path therefore uses the
+legacy near-zero handling:
 \begin{itemize}
-\item Before local reconstruction, if a cell satisfies
-      \texttt{e <= efloor} or \texttt{capn <= nfloor}, the code treats it as
-      dilute vacuum for the hydro update and sets:
-      \texttt{e, capn, p, xmom, ymom, zmom, u, v, w = 0}.
-\item In the \texttt{capn=0} cleanup branch (formerly reported as
-      \texttt{phase3: capn=0, Missing e}), the threshold check was updated to
-      use the same floors, and momentum components are also zeroed.
-\item In the \texttt{v\^2>=1 corrected (7034)} branch, cells already below
-      floors are forced to \texttt{u=v=w=0} directly, avoiding repeated
-      superluminal corrections from near-vacuum noise.
+\item The \texttt{capn=0} cleanup branch keeps the original tight tolerance
+      (\texttt{\textasciitilde 1e-9}) before flagging \texttt{Missing e}.
+\item No additional pre-reconstruction vacuuming with
+      \texttt{e\_floor/capn\_floor} is applied in \texttt{phase3}.
+\item No extra momentum zeroing tied to those removed floors is applied in
+      \texttt{phase3}.
 \end{itemize}
-
-This stabilization is intended to act in the very dilute tail and not in the
-physical freeze-out layer. For this setup (\texttt{ecrit=500 MeV/fm$^3$}),
-\texttt{efloor=1 MeV/fm$^3$} is far below the particlization criterion, so the
-expected impact on hypersurface geometry is small; nevertheless, freeze-out
-integrals should always be revalidated after such changes.
+This restores the pre-regression behavior: \texttt{Missing e} events remain a
+late-time dilute-tail effect instead of appearing at cycle 0.
 
 Additionally, the late-output routine \texttt{outfin} was hardened to avoid
 artificial job termination in dilute cells:
@@ -334,6 +323,64 @@ neighbors. The classification affects how reconstruction is performed in
 \item The code contains legacy comments for bag-model forms; in the current
       branch the active path uses the tabulated/chiral EoS calls.
 \end{itemize}
+
+\subsection{Operational map of \texttt{keqost}}
+In the current implementation, the effective EoS route is:
+\begin{itemize}
+\item \texttt{keqost > 0}: analytic hadronic branch. The code evaluates
+      \texttt{hxi=eqost(xi)} and then uses
+      \texttt{p = eosgm1*eps + em0n0*hxi}.
+\item \texttt{keqost = -2} or \texttt{-3}: tabulated chiral/QCD branch via
+      \texttt{eqsqcd3}.
+\item \texttt{keqost = -9}: alternative legacy branch via \texttt{prxx}.
+\end{itemize}
+
+\begin{longtable}{|p{2.1cm}|p{3.3cm}|p{3.9cm}|p{4.0cm}|}
+\hline
+\textbf{\texttt{keqost}} & \textbf{Route} & \textbf{Pressure source} & \textbf{Thermal variables} \\\hline
+\texttt{>0} & Analytic hadronic (\texttt{eqost}) &
+\texttt{p = eosgm1*eps + em0n0*hxi} &
+not from chiral tables in this branch \\\hline
+\texttt{-2}, \texttt{-3} & Tabulated chiral/QCD (\texttt{eqsqcd3}) &
+\texttt{presstab(e,n)} &
+\texttt{T,mu\_B,s} from \texttt{temptab/chemtab} and
+\(\;s=(e+p-\mu_B n)/T\;\) \\\hline
+\texttt{-9} & Legacy alternative (\texttt{prxx}) &
+\texttt{pres} from \texttt{prxx} &
+\texttt{temp,entrop} from \texttt{prxx} \\\hline
+\end{longtable}
+
+\subsection{What \texttt{eqsqcd3} returns}
+Given rest-frame inputs \texttt{(e,n)}, \texttt{eqsqcd3} evaluates:
+\begin{itemize}
+\item pressure from \texttt{presstab(e,n)};
+\item temperature from \texttt{temptab(e,n)};
+\item baryon chemical potential from \texttt{chemtab(e,n)};
+\item entropy density through
+      \[
+      s = \frac{e+p-\mu_B n}{T},
+      \]
+      with protection \texttt{s=0} if \texttt{T<=0}.
+\end{itemize}
+For \texttt{n<=0}, the routine returns
+\texttt{p=T=mu\_B=s=0}.
+
+\subsection{Tabulated EoS ranges and fallback behavior}
+The interpolation functions (\texttt{presstab}, \texttt{temptab},
+\texttt{chemtab}) use two tabulated domains:
+\begin{itemize}
+\item ``small'' table for low \texttt{(e,n)};
+\item ``big'' table for intermediate \texttt{(e,n)}.
+\end{itemize}
+Outside these tabulated domains, the code switches to simple closures:
+\begin{itemize}
+\item \texttt{presstab}: \texttt{p = 0.2964*e};
+\item \texttt{temptab}: \texttt{T \(\propto\) e\^{1/4}};
+\item \texttt{chemtab}: \texttt{mu\_B = 0}.
+\end{itemize}
+This is important at late times in very dilute peripheral cells, where
+thermodynamic consistency can degrade and trigger additional numerical
+corrections in the hydro inversion stage.
 
 \section{Freeze-out Hypersurface and Cornelius}
 After each full cycle, pre/post fields are available in

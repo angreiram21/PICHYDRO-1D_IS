@@ -9022,6 +9022,7 @@ c
       open (unit=338,file='fort.338',status='unknown')
       open (unit=339,file='fort.339',status='unknown')
       open (unit=889,file='fort.889',status='unknown')
+      open (unit=949,file='freezout.dat',status='unknown')
       return
    30 continue
       stop 1030

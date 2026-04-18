@@ -123,8 +123,16 @@ So, in this case, \texttt{dz > dt} is satisfied.
 
 \section{Input Files}
 \subsection{\texttt{input/inhydro}}
-The code reads \texttt{inhydro} at startup from unit 155. For the current
-workflow (\texttt{kslab=8}), each line and column means:
+The code reads \texttt{inhydro} at startup from unit 155.
+Entries can be written as:
+\begin{itemize}
+\item plain legacy values (one data line per expected read),
+\item \texttt{name = values},
+\item \texttt{name: values}.
+\end{itemize}
+Blank lines and comment lines starting with \texttt{\#} or \texttt{!} are ignored.
+
+For the current workflow (\texttt{kslab=8}), each data line and column means:
 
 \begin{longtable}{|p{1.2cm}|p{1.0cm}|p{3.0cm}|p{6.5cm}|}
 \hline
@@ -150,6 +158,7 @@ Line & Col. & Variable & Meaning \\\hline
 7 & 5 & \texttt{ncycaf} & Final-cycle control parameter (fallback to 100 if zero). \\\hline
 8 & 1 & \texttt{npart} & Marker subdivision count in transverse directions per cell. \\\hline
 8 & 2 & \texttt{npartz} & Marker subdivision count in longitudinal (\texttt{z}) direction per cell. \\\hline
+9 & 1 & \texttt{eta\_t0\_cut} & Optional rapidity cut for SMASH Milne synchronization: if \texttt{>0}, use \(t_0=\tau_0\cosh(\eta_{t0,\mathrm{cut}})\). \\\hline
 \end{longtable}
 
 For other \texttt{kslab} values, line 7 has a different schema:
@@ -160,14 +169,15 @@ For other \texttt{kslab} values, line 7 has a different schema:
 
 Current repository example:
 \begin{verbatim}
-0 0 0 1 0 8
-test for new IS
-out-test
-newIS-3-3-5-4
--3 301 1 10
-3
-.95 0.5 10 10 1
-3 3
+ioptos1_ioptos2_ioptos3_ioptos4_kdebug_kslab = 0 0 0 1 0 8
+run_id = test for new IS
+output_file = out-test
+initial_state_file = newIS-3-3-5-4
+keqost_icysum_krandm_tnc = -3 301 1 10
+jdim1 = 3
+porton_dtmod_ncycpt_ncycrp_ncycaf = .95 0.2 10 10 1
+npart_npartz = 3 3
+eta_t0_cut = 2.0
 \end{verbatim}
 
 \subsection{\texttt{input/fort.100}}
@@ -250,10 +260,35 @@ y_i' &= y_i + v_{y,i}\Delta t_i,\\
 z_i' &= z_i + v_{z,i}\Delta t_i.
 \end{align*}
 Here \(v_{\alpha,i}=p_{\alpha,i}/E_i\) (with a causal clamp if needed).
-If \texttt{t0} from hydro input is positive, it is used as
-\(t_{\mathrm{target}}\); otherwise the maximum particle \(t_i\) found in the
-file is used so all retained particles are synchronized at a single
-Cartesian time slice.
+When \texttt{eta\_t0\_cut>0} in \texttt{inhydro} (and Milne particle input is used),
+the synchronization time is estimated per event as
+\begin{align*}
+t_{\mathrm{target}} = \tau_0 \cosh(\eta_{t0,\mathrm{cut}}),
+\end{align*}
+with \(\tau_0\) taken from the first column of the SMASH IC line format.
+If \texttt{eta\_t0\_cut<=0} (or absent), the fallback is the previous
+\(t_{\mathrm{target}}=\max(t_i)\) behavior.
+
+When the SMASH file contains multiple event blocks in the same file
+(\texttt{\# event ... start/end}), the code performs fluidization
+event by event, then averages the conserved hydrodynamic fields over the
+number of processed events before reconstructing \(u^\mu\), \(e\), \(n_B\),
+and pressure.
+
+To avoid pathological starts from high-rapidity outliers, automatic
+\(t_{\mathrm{target}}\) selection includes a safety clamp window:
+\begin{align*}
+t_{\mathrm{target}} \in [t_{\min}, t_{\max}],
+\end{align*}
+with current defaults \(t_{\min}=0.05\) fm/\(c\), \(t_{\max}=3.0\) fm/\(c\).
+If clamping is triggered, a yellow warning is printed at initialization.
+
+Particles with \(t_i>t_{\mathrm{target}}\) cannot be back-propagated to the
+common start slice and are therefore discarded before deposition. The code
+prints a yellow warning with dropped/considered counts and the dropped
+fraction. An optional hard safety stop can be enabled with
+\texttt{stop\_if\_large\_time\_drop=.true.}, using
+\texttt{max\_time\_drop\_fraction} (default \(0.05\)).
 
 For validation, the fluidization module prints automatic pre/post mapping
 diagnostics:

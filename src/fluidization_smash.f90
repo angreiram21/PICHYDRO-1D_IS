@@ -13,6 +13,8 @@ module fluidization_smash
     logical :: propagate_to_target_t = .true.
     logical :: drop_if_t_above_target = .true.
     logical :: filter_oscar_spectators = .true.
+    logical :: clamp_auto_target_t = .true.
+    logical :: stop_if_large_time_drop = .false.
     logical :: input_momentum_in_gev = .true.
     logical :: input_energy_in_gev = .true.
     logical :: use_gaussian_kernel = .true.
@@ -20,6 +22,10 @@ module fluidization_smash
     real(8) :: sigma_y = 0.8d0
     real(8) :: sigma_z = 0.8d0
     real(8) :: target_t = -1.0d0
+    real(8) :: auto_target_t_max = 3.0d0
+    real(8) :: auto_target_t_min = 0.05d0
+    real(8) :: max_time_drop_fraction = 0.05d0
+    real(8) :: eta_t0_cut = -1.0d0
     real(8) :: spectator_abs_rapidity_cut = 1.5d0
     real(8) :: min_e = 0.0d0
     real(8) :: min_nb = 0.0d0
@@ -52,25 +58,43 @@ contains
     integer :: unit, ios
     integer :: n_dropped_time, n_dropped_zeroe, n_dropped_spectators
     integer :: n_prefilter
+    integer :: n_events
     character(len=512) :: line
     real(8) :: c1, c2, c3, c4, px, py, pz, ep, baryon
     logical :: is_milne_line, is_oscar_line
     real(8) :: pdg_meta, ncoll_meta
     real(8) :: t_part, x_part, y_part, z_part
     real(8) :: vx, vy, vz, dt_prop
-    real(8) :: target_t_eff, t_max_input, tiny
+    real(8) :: target_t_eff, tiny, target_t_raw
+    real(8) :: time_drop_fraction
     real(8) :: sum_e_pre, sum_px_pre, sum_py_pre, sum_pz_pre, sum_b_pre
     real(8) :: sum_ex_pre, sum_ey_pre, sum_ez_pre, sum_et_pre
     real(8) :: sum_e_post, sum_px_post, sum_py_post, sum_pz_post, sum_b_post
     real(8) :: sum_ex_post, sum_ey_post, sum_ez_post, sum_et_post
+    logical :: has_event_markers, in_event
+    integer :: nbuf, ncap
+    real(8), allocatable :: buf_t(:), buf_x(:), buf_y(:), buf_z(:)
+    real(8), allocatable :: buf_px(:), buf_py(:), buf_pz(:), buf_e(:), buf_b(:)
+    integer :: n_prefilter_evt, n_dropped_zeroe_evt, n_dropped_time_evt
+    integer :: n_particles_evt
+    real(8) :: t_max_evt, tau0_evt
+    real(8) :: sum_e_pre_evt, sum_px_pre_evt, sum_py_pre_evt, sum_pz_pre_evt, sum_b_pre_evt
+    real(8) :: sum_ex_pre_evt, sum_ey_pre_evt, sum_ez_pre_evt, sum_et_pre_evt
+    real(8) :: sum_e_post_evt, sum_px_post_evt, sum_py_post_evt, sum_pz_post_evt, sum_b_post_evt
+    real(8) :: sum_ex_post_evt, sum_ey_post_evt, sum_ez_post_evt, sum_et_post_evt
 
     n_particles = 0
     ierr = 0
+    n_events = 0
     n_dropped_time = 0
     n_dropped_zeroe = 0
     n_dropped_spectators = 0
     n_prefilter = 0
     tiny = 1.0d-20
+    has_event_markers = .false.
+    in_event = .false.
+    nbuf = 0
+    ncap = 0
     sum_e_pre = 0.0d0
     sum_px_pre = 0.0d0
     sum_py_pre = 0.0d0
@@ -101,40 +125,43 @@ contains
       return
     end if
 
-    if (opts%has_header) then
-      call skip_header(unit, ios)
-      if (ios /= 0) then
-        ierr = 2002
-        close(unit)
-        return
-      end if
-    end if
-
-    target_t_eff = opts%target_t
-    if (opts%propagate_to_target_t .and. target_t_eff <= 0.0d0) then
-      call compute_max_particle_time(unit, opts%has_header, t_max_input, ios)
-      if (ios /= 0) then
-        ierr = 2004
-        close(unit)
-        return
-      end if
-      target_t_eff = t_max_input
-      rewind(unit)
-      if (opts%has_header) then
-        call skip_header(unit, ios)
-        if (ios /= 0) then
-          ierr = 2002
-          close(unit)
-          return
-        end if
-      end if
-    end if
+    call reset_event_state()
 
     do
       read(unit, '(A)', iostat=ios) line
       if (ios /= 0) exit
       if (len_trim(line) == 0) cycle
-      if (line(1:1) == '#') cycle
+      if (line(1:1) == '#') then
+        if (is_event_start_marker(line)) then
+          has_event_markers = .true.
+          if (in_event) then
+            call flush_event(.true.)
+            if (ierr /= 0) then
+              close(unit)
+              call cleanup_buffers()
+              return
+            end if
+          end if
+          in_event = .true.
+          cycle
+        end if
+        if (is_event_end_marker(line)) then
+          has_event_markers = .true.
+          if (in_event) then
+            call flush_event(.true.)
+            if (ierr /= 0) then
+              close(unit)
+              call cleanup_buffers()
+              return
+            end if
+          end if
+          in_event = .false.
+          cycle
+        end if
+        cycle
+      end if
+
+      if (.not.in_event) in_event = .true.
 
       call parse_smash_particle_line(line, ios, c1, c2, c3, c4, px, py, pz, ep, baryon, &
                                      is_milne_line, is_oscar_line, pdg_meta, ncoll_meta)
@@ -149,6 +176,7 @@ contains
       end if
 
       if (is_milne_line) then
+        if (tau0_evt <= 0.0d0) tau0_evt = c1
         call milne_to_cartesian(c1, c2, c3, c4, t_part, x_part, y_part, z_part)
       else
         t_part = c1
@@ -157,77 +185,66 @@ contains
         z_part = c4
       end if
 
-      n_prefilter = n_prefilter + 1
-      sum_e_pre = sum_e_pre + ep
-      sum_px_pre = sum_px_pre + px
-      sum_py_pre = sum_py_pre + py
-      sum_pz_pre = sum_pz_pre + pz
-      sum_b_pre = sum_b_pre + baryon
-      sum_ex_pre = sum_ex_pre + ep * x_part
-      sum_ey_pre = sum_ey_pre + ep * y_part
-      sum_ez_pre = sum_ez_pre + ep * z_part
-      sum_et_pre = sum_et_pre + ep * t_part
+      n_prefilter_evt = n_prefilter_evt + 1
+      sum_e_pre_evt = sum_e_pre_evt + ep
+      sum_px_pre_evt = sum_px_pre_evt + px
+      sum_py_pre_evt = sum_py_pre_evt + py
+      sum_pz_pre_evt = sum_pz_pre_evt + pz
+      sum_b_pre_evt = sum_b_pre_evt + baryon
+      sum_ex_pre_evt = sum_ex_pre_evt + ep * x_part
+      sum_ey_pre_evt = sum_ey_pre_evt + ep * y_part
+      sum_ez_pre_evt = sum_ez_pre_evt + ep * z_part
+      sum_et_pre_evt = sum_et_pre_evt + ep * t_part
 
-      if (opts%propagate_to_target_t) then
-        if (ep <= tiny) then
-          n_dropped_zeroe = n_dropped_zeroe + 1
-          cycle
-        end if
-        if (opts%input_momentum_in_gev .and. opts%input_energy_in_gev) then
-          vx = px / ep
-          vy = py / ep
-          vz = pz / ep
-        else
-          vx = px / ep
-          vy = py / ep
-          vz = pz / ep
-        end if
-        if (vx*vx + vy*vy + vz*vz > 1.0d0) then
-          call clamp_velocity(vx, vy, vz)
-        end if
-        dt_prop = target_t_eff - t_part
-        if (dt_prop < 0.0d0 .and. opts%drop_if_t_above_target) then
-          n_dropped_time = n_dropped_time + 1
-          cycle
-        end if
-        x_part = x_part + vx * dt_prop
-        y_part = y_part + vy * dt_prop
-        z_part = z_part + vz * dt_prop
-        t_part = target_t_eff
+      if (ep <= tiny) then
+        n_dropped_zeroe_evt = n_dropped_zeroe_evt + 1
+        cycle
       end if
 
-      sum_e_post = sum_e_post + ep
-      sum_px_post = sum_px_post + px
-      sum_py_post = sum_py_post + py
-      sum_pz_post = sum_pz_post + pz
-      sum_b_post = sum_b_post + baryon
-      sum_ex_post = sum_ex_post + ep * x_part
-      sum_ey_post = sum_ey_post + ep * y_part
-      sum_ez_post = sum_ez_post + ep * z_part
-      sum_et_post = sum_et_post + ep * t_part
-
-      call deposit_particle(opts, ibar, jbar, kbar, nq, ijbar, dx, dy, dz, &
-                            x0, y0, z0, x_part, y_part, z_part, px, py, pz, ep, baryon, &
-                            e, capn, xmom, ymom, zmom)
-
-      n_particles = n_particles + 1
+      call append_particle(t_part, x_part, y_part, z_part, px, py, pz, ep, baryon, ierr)
+      if (ierr /= 0) then
+        close(unit)
+        call cleanup_buffers()
+        return
+      end if
+      if (t_part > t_max_evt) t_max_evt = t_part
     end do
 
-    close(unit)
+    if (in_event .or. (.not.has_event_markers .and. n_prefilter_evt > 0)) then
+      call flush_event(.true.)
+      if (ierr /= 0) then
+        close(unit)
+        call cleanup_buffers()
+        return
+      end if
+    end if
 
-    if (n_particles <= 0) then
+    close(unit)
+    call cleanup_buffers()
+
+    if (n_events <= 0 .or. n_particles <= 0) then
       ierr = 2003
       return
     end if
 
+    call scale_conserved_arrays(ibar, jbar, kbar, nq, ijbar, &
+                                1.0d0 / dble(n_events), e, capn, xmom, ymom, zmom)
+
     call finalize_hydro_from_tensors(ibar, jbar, kbar, nq, ijbar, dxdydz, &
                                      opts%min_e, opts%min_nb, e, capn, pressure, &
                                      u, v, w, xmom, ymom, zmom)
-    if (opts%propagate_to_target_t) then
-      write(*,'(A,1PE14.6)') 'Fluidization target t [fm/c] = ', target_t_eff
-    end if
+    write(*,'(A,I10)') 'Fluidization: events averaged = ', n_events
+    write(*,'(A,I10)') 'Fluidization: particles kept (sum over events) = ', n_particles
     if (n_dropped_time > 0) then
       write(*,'(A,I10)') 'Fluidization: particles dropped (t>target_t) = ', n_dropped_time
+      if (n_prefilter > 0) then
+        time_drop_fraction = dble(n_dropped_time) / dble(n_prefilter)
+      else
+        time_drop_fraction = 0.0d0
+      end if
+      call print_time_drop_warning(n_dropped_time, n_prefilter, time_drop_fraction, &
+                                   opts%max_time_drop_fraction, opts%stop_if_large_time_drop, ierr)
+      if (ierr /= 0) return
     end if
     if (n_dropped_zeroe > 0) then
       write(*,'(A,I10)') 'Fluidization: particles dropped (E<=0) = ', n_dropped_zeroe
@@ -241,8 +258,226 @@ contains
                                    sum_e_post, sum_px_post, sum_py_post, sum_pz_post, sum_b_post, &
                                    sum_ex_post, sum_ey_post, sum_ez_post, sum_et_post)
     if (opts%propagate_to_target_t) then
-      call print_yellow_mapping_warning(target_t_eff)
+      call print_yellow_mapping_warning(-1.0d0)
     end if
+  contains
+    subroutine reset_event_state()
+      nbuf = 0
+      n_prefilter_evt = 0
+      n_dropped_zeroe_evt = 0
+      n_dropped_time_evt = 0
+      n_particles_evt = 0
+      t_max_evt = -1.0d30
+      tau0_evt = -1.0d0
+      sum_e_pre_evt = 0.0d0
+      sum_px_pre_evt = 0.0d0
+      sum_py_pre_evt = 0.0d0
+      sum_pz_pre_evt = 0.0d0
+      sum_b_pre_evt = 0.0d0
+      sum_ex_pre_evt = 0.0d0
+      sum_ey_pre_evt = 0.0d0
+      sum_ez_pre_evt = 0.0d0
+      sum_et_pre_evt = 0.0d0
+      sum_e_post_evt = 0.0d0
+      sum_px_post_evt = 0.0d0
+      sum_py_post_evt = 0.0d0
+      sum_pz_post_evt = 0.0d0
+      sum_b_post_evt = 0.0d0
+      sum_ex_post_evt = 0.0d0
+      sum_ey_post_evt = 0.0d0
+      sum_ez_post_evt = 0.0d0
+      sum_et_post_evt = 0.0d0
+    end subroutine reset_event_state
+
+    subroutine flush_event(count_event)
+      logical, intent(in) :: count_event
+      integer :: ip
+
+      if (count_event) n_events = n_events + 1
+      if (n_prefilter_evt <= 0 .and. nbuf <= 0) then
+        call reset_event_state()
+        return
+      end if
+
+      target_t_eff = opts%target_t
+      target_t_raw = target_t_eff
+      if (opts%propagate_to_target_t .and. target_t_eff <= 0.0d0) then
+        if (opts%eta_t0_cut > 0.0d0 .and. tau0_evt > tiny) then
+          target_t_raw = tau0_evt * cosh(opts%eta_t0_cut)
+          target_t_eff = target_t_raw
+        else
+          if (t_max_evt < -1.0d20) then
+            ierr = 2004
+            return
+          end if
+          target_t_raw = t_max_evt
+          target_t_eff = t_max_evt
+        end if
+        if (target_t_eff < -1.0d20) then
+          ierr = 2004
+          return
+        end if
+        if (opts%clamp_auto_target_t) then
+          target_t_eff = min(target_t_eff, opts%auto_target_t_max)
+          target_t_eff = max(target_t_eff, opts%auto_target_t_min)
+        end if
+      end if
+
+      do ip = 1, nbuf
+        t_part = buf_t(ip)
+        x_part = buf_x(ip)
+        y_part = buf_y(ip)
+        z_part = buf_z(ip)
+        px = buf_px(ip)
+        py = buf_py(ip)
+        pz = buf_pz(ip)
+        ep = buf_e(ip)
+        baryon = buf_b(ip)
+
+        if (opts%propagate_to_target_t) then
+          vx = px / ep
+          vy = py / ep
+          vz = pz / ep
+          if (vx*vx + vy*vy + vz*vz > 1.0d0) then
+            call clamp_velocity(vx, vy, vz)
+          end if
+          dt_prop = target_t_eff - t_part
+          if (dt_prop < 0.0d0 .and. opts%drop_if_t_above_target) then
+            n_dropped_time_evt = n_dropped_time_evt + 1
+            cycle
+          end if
+          x_part = x_part + vx * dt_prop
+          y_part = y_part + vy * dt_prop
+          z_part = z_part + vz * dt_prop
+          t_part = target_t_eff
+        end if
+
+        sum_e_post_evt = sum_e_post_evt + ep
+        sum_px_post_evt = sum_px_post_evt + px
+        sum_py_post_evt = sum_py_post_evt + py
+        sum_pz_post_evt = sum_pz_post_evt + pz
+        sum_b_post_evt = sum_b_post_evt + baryon
+        sum_ex_post_evt = sum_ex_post_evt + ep * x_part
+        sum_ey_post_evt = sum_ey_post_evt + ep * y_part
+        sum_ez_post_evt = sum_ez_post_evt + ep * z_part
+        sum_et_post_evt = sum_et_post_evt + ep * t_part
+
+        call deposit_particle(opts, ibar, jbar, kbar, nq, ijbar, dx, dy, dz, &
+                              x0, y0, z0, x_part, y_part, z_part, px, py, pz, ep, baryon, &
+                              e, capn, xmom, ymom, zmom)
+        n_particles_evt = n_particles_evt + 1
+      end do
+
+      n_prefilter = n_prefilter + n_prefilter_evt
+      n_dropped_zeroe = n_dropped_zeroe + n_dropped_zeroe_evt
+      n_dropped_time = n_dropped_time + n_dropped_time_evt
+      n_particles = n_particles + n_particles_evt
+      sum_e_pre = sum_e_pre + sum_e_pre_evt
+      sum_px_pre = sum_px_pre + sum_px_pre_evt
+      sum_py_pre = sum_py_pre + sum_py_pre_evt
+      sum_pz_pre = sum_pz_pre + sum_pz_pre_evt
+      sum_b_pre = sum_b_pre + sum_b_pre_evt
+      sum_ex_pre = sum_ex_pre + sum_ex_pre_evt
+      sum_ey_pre = sum_ey_pre + sum_ey_pre_evt
+      sum_ez_pre = sum_ez_pre + sum_ez_pre_evt
+      sum_et_pre = sum_et_pre + sum_et_pre_evt
+      sum_e_post = sum_e_post + sum_e_post_evt
+      sum_px_post = sum_px_post + sum_px_post_evt
+      sum_py_post = sum_py_post + sum_py_post_evt
+      sum_pz_post = sum_pz_post + sum_pz_post_evt
+      sum_b_post = sum_b_post + sum_b_post_evt
+      sum_ex_post = sum_ex_post + sum_ex_post_evt
+      sum_ey_post = sum_ey_post + sum_ey_post_evt
+      sum_ez_post = sum_ez_post + sum_ez_post_evt
+      sum_et_post = sum_et_post + sum_et_post_evt
+
+      if (count_event) then
+        write(*,'(A,I6,A,I8,A,I8,A,I8,A,1PE12.4)') &
+          'Fluidization event ', n_events, ': pre=', n_prefilter_evt, &
+          ' kept=', n_particles_evt, ' drop_t=', n_dropped_time_evt, &
+          ' target_t=', target_t_eff
+        if (opts%eta_t0_cut > 0.0d0 .and. tau0_evt > tiny) then
+          write(*,'(A,1PE12.4,A,1PE12.4)') '  t0 mode: tau0*cosh(eta_cut), tau0=', &
+                                            tau0_evt, ' eta_cut=', opts%eta_t0_cut
+        end if
+      end if
+
+      if (opts%propagate_to_target_t .and. opts%clamp_auto_target_t .and. opts%target_t <= 0.0d0) then
+        if (abs(target_t_eff-target_t_raw) > 1.0d-12) then
+          call print_target_t_clamp_warning(target_t_raw, target_t_eff, &
+                                            opts%auto_target_t_min, opts%auto_target_t_max)
+        end if
+      end if
+      if (n_dropped_time_evt > 0) then
+        if (n_prefilter_evt > 0) then
+          time_drop_fraction = dble(n_dropped_time_evt) / dble(n_prefilter_evt)
+        else
+          time_drop_fraction = 0.0d0
+        end if
+        call print_time_drop_warning(n_dropped_time_evt, n_prefilter_evt, time_drop_fraction, &
+                                     opts%max_time_drop_fraction, opts%stop_if_large_time_drop, ierr)
+        if (ierr /= 0) return
+      end if
+
+      call reset_event_state()
+    end subroutine flush_event
+
+    subroutine append_particle(ti, xi, yi, zi, pxi, pyi, pzi, ei, bi, ierr_loc)
+      real(8), intent(in) :: ti, xi, yi, zi, pxi, pyi, pzi, ei, bi
+      integer, intent(out) :: ierr_loc
+      ierr_loc = 0
+      if (nbuf >= ncap) then
+        call grow_particle_buffer(ierr_loc)
+        if (ierr_loc /= 0) return
+      end if
+      nbuf = nbuf + 1
+      buf_t(nbuf) = ti
+      buf_x(nbuf) = xi
+      buf_y(nbuf) = yi
+      buf_z(nbuf) = zi
+      buf_px(nbuf) = pxi
+      buf_py(nbuf) = pyi
+      buf_pz(nbuf) = pzi
+      buf_e(nbuf) = ei
+      buf_b(nbuf) = bi
+    end subroutine append_particle
+
+    subroutine grow_particle_buffer(ierr_loc)
+      integer, intent(out) :: ierr_loc
+      integer :: new_cap
+
+      ierr_loc = 0
+      if (ncap <= 0) then
+        new_cap = 2048
+      else
+        new_cap = 2 * ncap
+      end if
+
+      call resize_real8_array(buf_t, new_cap, ierr_loc); if (ierr_loc /= 0) return
+      call resize_real8_array(buf_x, new_cap, ierr_loc); if (ierr_loc /= 0) return
+      call resize_real8_array(buf_y, new_cap, ierr_loc); if (ierr_loc /= 0) return
+      call resize_real8_array(buf_z, new_cap, ierr_loc); if (ierr_loc /= 0) return
+      call resize_real8_array(buf_px, new_cap, ierr_loc); if (ierr_loc /= 0) return
+      call resize_real8_array(buf_py, new_cap, ierr_loc); if (ierr_loc /= 0) return
+      call resize_real8_array(buf_pz, new_cap, ierr_loc); if (ierr_loc /= 0) return
+      call resize_real8_array(buf_e, new_cap, ierr_loc); if (ierr_loc /= 0) return
+      call resize_real8_array(buf_b, new_cap, ierr_loc); if (ierr_loc /= 0) return
+      ncap = new_cap
+    end subroutine grow_particle_buffer
+
+    subroutine cleanup_buffers()
+      if (allocated(buf_t)) deallocate(buf_t)
+      if (allocated(buf_x)) deallocate(buf_x)
+      if (allocated(buf_y)) deallocate(buf_y)
+      if (allocated(buf_z)) deallocate(buf_z)
+      if (allocated(buf_px)) deallocate(buf_px)
+      if (allocated(buf_py)) deallocate(buf_py)
+      if (allocated(buf_pz)) deallocate(buf_pz)
+      if (allocated(buf_e)) deallocate(buf_e)
+      if (allocated(buf_b)) deallocate(buf_b)
+      nbuf = 0
+      ncap = 0
+    end subroutine cleanup_buffers
   end subroutine fluidize_smash_particles
 
 
@@ -451,6 +686,63 @@ contains
       end do
     end do
   end subroutine zero_hydro_arrays
+
+
+  subroutine scale_conserved_arrays(ibar, jbar, kbar, nq, ijbar, factor, e, capn, xmom, ymom, zmom)
+    integer, intent(in) :: ibar, jbar, kbar, nq, ijbar
+    real(8), intent(in) :: factor
+    real(8), intent(inout) :: e(*), capn(*), xmom(*), ymom(*), zmom(*)
+    integer :: i, j, k, ijk
+
+    do k = 1, kbar
+      do j = 1, jbar
+        do i = 1, ibar
+          ijk = nq * (ijbar * (k - 1) + ibar * (j - 1) + i - 1) + 1
+          e(ijk) = factor * e(ijk)
+          capn(ijk) = factor * capn(ijk)
+          xmom(ijk) = factor * xmom(ijk)
+          ymom(ijk) = factor * ymom(ijk)
+          zmom(ijk) = factor * zmom(ijk)
+        end do
+      end do
+    end do
+  end subroutine scale_conserved_arrays
+
+
+  subroutine resize_real8_array(arr, new_size, ierr)
+    real(8), allocatable, intent(inout) :: arr(:)
+    integer, intent(in) :: new_size
+    integer, intent(out) :: ierr
+    integer :: old_size
+    real(8), allocatable :: tmp(:)
+
+    ierr = 0
+    old_size = 0
+    if (allocated(arr)) old_size = size(arr)
+
+    allocate(tmp(new_size), stat=ierr)
+    if (ierr /= 0) then
+      ierr = 2006
+      return
+    end if
+    tmp = 0.0d0
+    if (old_size > 0) tmp(1:old_size) = arr(1:old_size)
+    if (allocated(arr)) deallocate(arr)
+    call move_alloc(tmp, arr)
+  end subroutine resize_real8_array
+
+
+  logical function is_event_start_marker(line)
+    character(len=*), intent(in) :: line
+    is_event_start_marker = index(line, '# event') > 0 .and. &
+                            (index(line, 'start') > 0 .or. index(line, ' out ') > 0)
+  end function is_event_start_marker
+
+
+  logical function is_event_end_marker(line)
+    character(len=*), intent(in) :: line
+    is_event_end_marker = index(line, '# event') > 0 .and. index(line, 'end') > 0
+  end function is_event_end_marker
 
 
   subroutine skip_header(unit, ios)
@@ -701,9 +993,49 @@ contains
 
     write(*,'(A)') c_yellow// &
       'WARNING: SMASH->hydro mapping to constant t can alter the spatial structure of the initial state.'
-    write(*,'(A,1PE14.6)') 'WARNING: target t used for synchronization [fm/c] = ', target_t_eff
+    if (target_t_eff > 0.0d0) then
+      write(*,'(A,1PE14.6)') 'WARNING: target t used for synchronization [fm/c] = ', target_t_eff
+    else
+      write(*,'(A)') 'WARNING: in multi-event mode, each event may use a different target t.'
+    end if
     write(*,'(A)') 'WARNING: review pre/post mapping diagnostics above before physics comparisons.'//c_reset
   end subroutine print_yellow_mapping_warning
+
+
+  subroutine print_target_t_clamp_warning(t_raw, t_used, tmin, tmax)
+    real(8), intent(in) :: t_raw, t_used, tmin, tmax
+    character(len=*), parameter :: c_yellow = achar(27)//'[33m'
+    character(len=*), parameter :: c_reset = achar(27)//'[0m'
+
+    write(*,'(A)') c_yellow// &
+      'WARNING: auto target_t from particle max(t) was clamped for hydro safety.'
+    write(*,'(A,1PE14.6,A,1PE14.6)') 'WARNING: raw/used target_t [fm/c] = ', t_raw, ' -> ', t_used
+    write(*,'(A,1PE14.6,A,1PE14.6)') 'WARNING: clamp window [tmin,tmax] [fm/c] = ', tmin, ' / ', tmax
+    write(*,'(A)') 'WARNING: set target_t explicitly if you need a different initialization time.'//c_reset
+  end subroutine print_target_t_clamp_warning
+
+
+  subroutine print_time_drop_warning(n_drop, n_total, frac, frac_lim, stop_on_limit, ierr)
+    integer, intent(in) :: n_drop, n_total
+    real(8), intent(in) :: frac, frac_lim
+    logical, intent(in) :: stop_on_limit
+    integer, intent(inout) :: ierr
+    character(len=*), parameter :: c_yellow = achar(27)//'[33m'
+    character(len=*), parameter :: c_red = achar(27)//'[31m'
+    character(len=*), parameter :: c_reset = achar(27)//'[0m'
+
+    write(*,'(A)') c_yellow// &
+      'WARNING: particles with ti>target_t were removed before fluidization.'
+    write(*,'(A,I10,A,I10,A,F8.3,A)') 'WARNING: dropped/considered = ', n_drop, ' / ', n_total, &
+      ' (', 100.0d0*frac, '%)'
+    write(*,'(A,F8.3,A)') 'WARNING: configured drop-fraction limit = ', 100.0d0*frac_lim, '%'//c_reset
+
+    if (stop_on_limit .and. frac > frac_lim) then
+      write(*,'(A)') c_red// &
+        'ERROR: time-drop fraction exceeds configured limit; aborting initialization.'//c_reset
+      ierr = 2005
+    end if
+  end subroutine print_time_drop_warning
 
 
   real(8) function gaussian_1d(dx, sigma)

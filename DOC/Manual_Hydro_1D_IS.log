@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2026.4.9)  18 APR 2026 18:19
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2026.4.9)  18 APR 2026 19:41
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -407,119 +407,138 @@ T1/cmr/m/n/10.95 ;
 LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <12> not available
 (Font)              Font shape `T1/cmtt/m/n' tried instead on input line 87.
 
-Underfull \hbox (badness 3039) in paragraph at lines 133--133
+Underfull \hbox (badness 3039) in paragraph at lines 141--141
 []|\T1/cmr/m/n/10.95 Output-control flag (legacy/optional
  []
 
 
-Underfull \hbox (badness 1924) in paragraph at lines 134--134
+Underfull \hbox (badness 1924) in paragraph at lines 142--142
 []|\T1/cmr/m/n/10.95 Output-control flag (se-lected pro-file
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 141--141
+Underfull \hbox (badness 10000) in paragraph at lines 149--149
 []|\T1/cmr/m/n/10.95 Equation-of-state se-lec-tor (neg-a-tive
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 141--141
+Underfull \hbox (badness 10000) in paragraph at lines 149--149
 \T1/cmr/m/n/10.95 val-ues use tab-u-lated QCD/chiral
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 144--144
+Underfull \hbox (badness 10000) in paragraph at lines 152--152
 []|\T1/cmr/m/n/10.95 Spatial scale/discretization con-trol
  []
 
 
-Underfull \hbox (badness 3803) in paragraph at lines 148--148
+Underfull \hbox (badness 3803) in paragraph at lines 156--156
 []|\T1/cmr/m/n/10.95 Frequency (in cy-cles) for particle-
  []
 
 
-Underfull \vbox (badness 10000) detected at line 150
+Underfull \vbox (badness 10000) detected at line 158
  []
 
 [4] [5]
-LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <10.95> not available
-(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 197.
+Underfull \hbox (badness 2119) in paragraph at lines 161--161
+\T1/cmr/m/n/10.95 syn-chro-niza-tion: if \T1/cmtt/m/n/10.95 >0\T1/cmr/m/n/10.95
+ , use $\OML/cmm/m/it/10.95 t[] \OT1/cmr/m/n/10.95 =
+ []
 
-Overfull \hbox (49.03531pt too wide) in paragraph at lines 205--206
+[6]
+LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <10.95> not available
+(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 207.
+
+Overfull \hbox (49.03531pt too wide) in paragraph at lines 215--216
  []\T1/cmr/bx/n/10.95 Particle flu-idiza-tion path (\T1/cmtt/m/n/10.95 smash_pa
 rticles.dat\T1/cmr/bx/n/10.95 ).[] \T1/cmr/m/n/10.95 The parser ac-cepts SMASH 
 OS-CAR2013Extended
  []
 
-[6] [7]
-Overfull \hbox (14.04544pt too wide) in paragraph at lines 314--316
+[7]
+Overfull \hbox (16.71263pt too wide) in paragraph at lines 272--277
+[]\T1/cmr/m/n/10.95 When the SMASH file con-tains mul-ti-ple event blocks in th
+e same file (\T1/cmtt/m/n/10.95 # event ... start/end\T1/cmr/m/n/10.95 ),
+ []
+
+
+Overfull \hbox (102.66032pt too wide) in paragraph at lines 286--292
+\T1/cmr/m/n/10.95 counts and the dropped frac-tion. An op-tional hard safety st
+op can be en-abled with \T1/cmtt/m/n/10.95 stop_if_large_time_drop=.true.\T1/cm
+r/m/n/10.95 ,
+ []
+
+[8]
+Overfull \hbox (14.04544pt too wide) in paragraph at lines 349--351
 []\T1/cmr/m/n/10.95 Causality checks are ap-plied (for ex-am-ple, han-dling of 
 states with ex-ces-sively large momentum-
  []
 
-[8]
-Overfull \hbox (3.8733pt too wide) in paragraph at lines 356--358
+[9]
+Overfull \hbox (3.8733pt too wide) in paragraph at lines 391--393
 []\T1/cmr/m/n/10.95 No ad-di-tional pre-reconstruction vac-u-um-ing with \T1/cm
 tt/m/n/10.95 e_floor/capn_floor \T1/cmr/m/n/10.95 is ap-plied in \T1/cmtt/m/n/1
 0.95 phase3\T1/cmr/m/n/10.95 . 
  []
 
-[9]
-Underfull \hbox (badness 10000) in paragraph at lines 428--428
+[10]
+Underfull \hbox (badness 10000) in paragraph at lines 463--463
 []|\T1/cmr/m/n/10.95 Analytic hadronic
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 429--429
+Underfull \hbox (badness 10000) in paragraph at lines 464--464
 []|\T1/cmtt/m/n/10.95 p = eosgm1*eps +
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 431--431
+Underfull \hbox (badness 10000) in paragraph at lines 466--466
 []|\T1/cmr/m/n/10.95 Tabulated chi-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 433--434
+Underfull \hbox (badness 10000) in paragraph at lines 468--469
 []|\T1/cmtt/m/n/10.95 T,mu_B,s \T1/cmr/m/n/10.95 from
  []
 
 
-Underfull \hbox (badness 7832) in paragraph at lines 433--434
+Underfull \hbox (badness 7832) in paragraph at lines 468--469
 \T1/cmtt/m/n/10.95 temptab/chemtab \T1/cmr/m/n/10.95 and
  []
 
 
-Underfull \hbox (badness 4254) in paragraph at lines 435--435
+Underfull \hbox (badness 4254) in paragraph at lines 470--470
 []|\T1/cmr/m/n/10.95 Legacy al-ter-na-tive
  []
 
 
-Underfull \vbox (badness 10000) detected at line 438
+Underfull \vbox (badness 10000) detected at line 473
  []
 
-[10]
-Overfull \hbox (3.75935pt too wide) in paragraph at lines 500--503
+[11] [12]
+Overfull \hbox (3.75935pt too wide) in paragraph at lines 535--538
 \T1/cmr/m/n/10.95 Repository \T1/cmtt/m/n/10.95 README.md \T1/cmr/m/n/10.95 giv
 es a base-line com-pi-la-tion com-mand us-ing \T1/cmtt/m/n/10.95 gfortran \T1/c
 mr/m/n/10.95 and \T1/cmtt/m/n/10.95 cornelius.f90\T1/cmr/m/n/10.95 .
  []
 
-[11]
-Underfull \vbox (badness 10000) detected at line 547
+
+Underfull \vbox (badness 10000) detected at line 582
  []
 
-[12] (./Manual_Hydro_1D_IS.aux)
+[13] [14] (./Manual_Hydro_1D_IS.aux)
 Package rerunfilecheck Info: File `Manual_Hydro_1D_IS.out' has not changed.
 (rerunfilecheck)             Checksum: 3A64DD88FD5AD06C90E288D7FAEC6DD8;6196.
  ) 
 Here is how much of TeX's memory you used:
- 9290 strings out of 481008
- 133952 string characters out of 5909440
- 483142 words of memory out of 5000000
+ 9292 strings out of 481008
+ 133966 string characters out of 5909440
+ 484142 words of memory out of 5000000
  26280 multiletter control sequences out of 15000+600000
  416820 words of font info for 58 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 71i,11n,74p,399b,487s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 71i,11n,74p,399b,447s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}{/usr
 /share/texlive/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}</usr/share
 /texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texli
@@ -540,10 +559,10 @@ t/fonts/type1/public/cm-super/sfrm1200.pfb></usr/share/texlive/texmf-dist/fonts
 public/cm-super/sftt1095.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
 cm-super/sftt1200.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/cm-supe
 r/sftt1728.pfb>
-Output written on Manual_Hydro_1D_IS.pdf (12 pages, 349819 bytes).
+Output written on Manual_Hydro_1D_IS.pdf (14 pages, 354604 bytes).
 PDF statistics:
- 361 PDF objects out of 1000 (max. 8388607)
- 324 compressed objects within 4 object streams
- 82 named destinations out of 1000 (max. 500000)
+ 370 PDF objects out of 1000 (max. 8388607)
+ 331 compressed objects within 4 object streams
+ 84 named destinations out of 1000 (max. 500000)
  265 words of extra memory for PDF output out of 10000 (max. 10000000)
 

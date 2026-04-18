@@ -4,6 +4,12 @@ cd build
 gfortran -ffixed-line-length-none -c ../src/ic_smash.f90 ../src/fluidization_smash.f90 ../src/hydro_1D_IS.f ../src/cornelius.f90 -mcmodel=large
 gfortran -mcmodel=large *.o -o hydro
 
+`input/inhydro` now accepts labeled entries:
+- `name = values`
+- `name: values`
+- plain values (legacy-compatible)
+- comments starting with `#` or `!` are ignored
+
 Initialization source auto-detection in `readinput`:
 1. `../input/SMASH_IC.dat` (preferred for vHLLE comparisons)
 2. `../input/SMASH_IC.oscar`
@@ -27,8 +33,31 @@ Legacy particle format also accepted:
 `tau eta_s x y px py pz E baryon`
 
 Particles from constant-`tau` are converted to `(t,z)` and propagated to a
-common Cartesian start time `t=t0` before fluidization. If `t0<=0`, the code
-uses the maximum particle `t` found in the file.
+common Cartesian start time before fluidization. In the current setup this
+`target_t` is selected directly as `max(t_i)` from the particle list.
+
+If `SMASH_IC.dat` (or OSCAR) contains multiple events in the same file
+(`event ... start/end` blocks), the code now:
+- fluidizes each event independently (including its own auto `target_t`);
+- accumulates conserved fields (`T00`, momentum densities, `N0`);
+- averages those fields over the number of events before hydrodynamic closure.
+
+Optional `inhydro` flag for SMASH Milne input:
+- add one extra line after `npart npartz` with a single value `eta_t0_cut`.
+- if `eta_t0_cut > 0`, the per-event synchronization time is estimated as
+  `target_t = tau0 * cosh(eta_t0_cut)` (using `tau0` from the first column of
+  `SMASH_IC.dat`), instead of `max(t_i)`.
+- if missing or `eta_t0_cut <= 0`, the previous `max(t_i)` logic is used.
+
+Safety mechanism for auto-selected `target_t`:
+- when `t0<=0`, raw `target_t=max(t_i)` is clamped to `[0.05, 3.0] fm/c`
+  (configurable in `fluidization_options`);
+- a yellow warning is printed if clamping is applied.
+- particles with `ti>target_t` are dropped before fluidization, with a yellow
+  warning including dropped fraction.
+- optional hard stop is available through
+  `stop_if_large_time_drop=.true.` and
+  `max_time_drop_fraction` (default `0.05`).
 
 Automatic mapping diagnostics are printed at initialization:
 - particle counts pre/post mapping,

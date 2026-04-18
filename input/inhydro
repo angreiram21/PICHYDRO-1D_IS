@@ -1,8 +1,9 @@
-0 0 0 1 0 8
-test for new IS
-out-test
-newIS-3-3-5-4
--3 301 1 10
-3
- .95 0.2  10 10 1
-3 3
+ioptos1_ioptos2_ioptos3_ioptos4_kdebug_kslab = 0 0 0 1 0 8
+run_id = test for new IS
+output_file = out-test
+initial_state_file = newIS-3-3-5-4
+keqost_icysum_krandm_tnc = -3 301 1 10
+jdim1 = 3
+porton_dtmod_ncycpt_ncycrp_ncycaf = .95 0.2 10 10 1
+npart_npartz = 3 3
+eta_t0_cut = 2.0

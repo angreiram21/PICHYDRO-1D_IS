@@ -8,7 +8,9 @@ c   krandm parameter is now read from inhydro file: line 5, colunm 3
       parameter (maxfsiz=100)
       character infile*(maxfsiz), outfile*(maxfsiz), instat*(maxfsiz),
      1 instaf, outpath*(maxfsiz+7)
+      character*512 inhydro_vals
       character kstrng, iss, isu, isr, ibl
+      integer ios
 c
       common /files/ outfile, infile, linfile, loutfile
       common /files1/ instaf(100)
@@ -79,14 +81,21 @@ c                  READING FROM INHYDRO FILE
       rewind 155
       if (ios.ne.0) go to 190
       innf=1
-      read (155,*,err=290) ioptos1,ioptos2,ioptos3,ioptos4,kdebug,kslab
+      call read_inhydro_values(155,inhydro_vals,ios)
+      if (ios.ne.0) go to 290
+      read (inhydro_vals,*,err=290) ioptos1,ioptos2,ioptos3,ioptos4,
+     1 kdebug,kslab
       ioptosq=kslab
       hsizez=0.
       call opnfil
       innf=2
-      read (155,500,err=290) id
+      call read_inhydro_values(155,inhydro_vals,ios)
+      if (ios.ne.0) go to 290
+      read (inhydro_vals,500,err=290) id
       innf=3
-      read (155,370,err=300) outfile
+      call read_inhydro_values(155,inhydro_vals,ios)
+      if (ios.ne.0) go to 300
+      read (inhydro_vals,370,err=300) outfile
       loutfile=mylenc(outfile)
       outpath='output/'//outfile(1:loutfile)
       open (156,file=outpath(1:loutfile+7),status='unknown',err=200)
@@ -105,7 +114,9 @@ c      1 ibl(i),i=1,mg1)
       mg1=82-lg-mg
 c       write (156,350) (ibl(i),i=1,mg),isu,(kstrng(i),i=1,loutfile),(
 c      1 ibl(i),i=1,mg1)
-      read (155,370,err=310) instat
+      call read_inhydro_values(155,inhydro_vals,ios)
+      if (ios.ne.0) go to 310
+      read (inhydro_vals,370,err=310) instat
       lstfile=mylenc(instat)
       lg=lstfile+20
       mg=(82-lg)/2
@@ -162,7 +173,11 @@ c
 c
 c                 READING LINE 5 FROM INHYDRO FILE
 c
-      if (kresrt.eq.0) read (155,*,err=180) keqost,icysum,krandm,tnc
+      if (kresrt.eq.0) then
+      call read_inhydro_values(155,inhydro_vals,ios)
+      if (ios.ne.0) go to 180
+      read (inhydro_vals,*,err=180) keqost,icysum,krandm,tnc
+      endif
       write(*,*) 'krandm= ',krandm,'tnc=',tnc
       if (icysum.gt.0) go to 40
 c       write (156,*) ' ICYSUM < 0 - natural stop '
@@ -173,7 +188,11 @@ c       write (156,*) ' ICYSUM < 0 - natural stop '
       interv=1
       nonsym=0
 c                 READING LINE 6 FROM INHYDRO FILE
-      if (kresrt.eq.0) read (155,*,err=220) jdim1
+      if (kresrt.eq.0) then
+      call read_inhydro_values(155,inhydro_vals,ios)
+      if (ios.ne.0) go to 220
+      read (inhydro_vals,*,err=220) jdim1
+      endif
 c
 c      kslab: if 0, ellipsoids - default
 c             if 1, slabs
@@ -1086,7 +1105,8 @@ c     Feb 2005 - changed to read input from fort.100
      1 ymomijk, pNtot, Etot
       character*256 hline1, hline2, hline3, hline4, hline5, hline6,
      1 hline7, hline8
-      integer ios_hdr, ipos, ieq, ieq2
+      character*512 inhydro_vals
+      integer ios_hdr, ipos, ieq, ieq2, ios_eta_t0
       logical hash_header, have_smash_ic, have_smash_particles,
      1 have_smash_particles_uc,
      2 have_smash_particles_oscar,
@@ -1094,7 +1114,7 @@ c     Feb 2005 - changed to read input from fort.100
       type(smash_ic_options) smash_opts
       type(fluidization_options) fluid_opts
       integer ierr_smash, n_loaded_smash, n_particles_smash
-      real*8 x0hydro, y0hydro, z0hydro
+      real*8 x0hydro, y0hydro, z0hydro, eta_t0_cut_hydro
       character*256 smash_particle_file
       dimension nypt(700)
       equivalence (aa1(1),u), (aa1(2),v), (aa1(3),w), (aa2(1),capn),
@@ -1109,7 +1129,14 @@ c     nredux=1
       nreduz=nredux ! nreduz=1
       npart=2
       npartz=3
-      read (155,*) npart,npartz ! npart=3, npartz=3      
+      call read_inhydro_values(155,inhydro_vals,ios_hdr)
+      if (ios_hdr.ne.0) stop 9098
+      read (inhydro_vals,*) npart,npartz ! npart=3, npartz=3
+      eta_t0_cut_hydro=-1.0d0
+      call read_inhydro_values(155,inhydro_vals,ios_eta_t0)
+      if (ios_eta_t0.eq.0) read (inhydro_vals,*,iostat=ios_eta_t0)
+     1 eta_t0_cut_hydro
+      if (ios_eta_t0.ne.0) eta_t0_cut_hydro=-1.0d0
       if (npart.le.0) stop 99
       nparp=npart ! nparp=3
       nparpz=npartz ! nparpz=3
@@ -1406,8 +1433,14 @@ c        Instead of ESRM calc. we have now
       fluid_opts%propagate_to_target_t=.true.
       fluid_opts%drop_if_t_above_target=.true.
       fluid_opts%filter_oscar_spectators=.true.
+      fluid_opts%clamp_auto_target_t=.true.
+      fluid_opts%auto_target_t_min=0.05d0
+      fluid_opts%auto_target_t_max=3.0d0
+      fluid_opts%stop_if_large_time_drop=.false.
+      fluid_opts%max_time_drop_fraction=0.05d0
       fluid_opts%spectator_abs_rapidity_cut=1.5d0
-      fluid_opts%target_t=t0
+      fluid_opts%target_t=-1.0d0
+      fluid_opts%eta_t0_cut=eta_t0_cut_hydro
       fluid_opts%input_momentum_in_gev=.true.
       fluid_opts%input_energy_in_gev=.true.
       fluid_opts%use_gaussian_kernel=.true.
@@ -2715,6 +2748,8 @@ c
      1 bplot(300,700), cplot(300,700)
       common /miscnw/ cnfst, numfst
 c
+      character*512 inhydro_vals
+      integer ios
       dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
      1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233)
 c
@@ -2960,6 +2995,8 @@ c
       common /foclose/ EPSFOE, EPSFOB, IAdaptiveFO, NInactiveFO,
      1 NInactiveReq, NMinFOCheck, ICycleExtendStep, ICycleMaxHard,
      2 IClosedFO
+      character*512 inhydro_vals
+      integer ios
       dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
      1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233)
      
@@ -3072,7 +3109,11 @@ c      1 comprs,bcoef,ioptos1,ioptos2,kslab,kw,kdebug
       if (ap.le.0) kpbar=1
       if (ioptosq.ne.0) kpbar=0
 c                              _____________________________INPUT
-      if (kpbar.eq.1) read (155,*) ksuppr
+      if (kpbar.eq.1) then
+      call read_inhydro_values(155,inhydro_vals,ios)
+      if (ios.ne.0) go to 740
+      read (inhydro_vals,*) ksuppr
+      endif
       go to 20
    10 continue
 c     Input here is from (2): Initial state table
@@ -3166,14 +3207,25 @@ c
 c__7_____LINE 7  DEPENDS ON VALUE OF KSLAB
 c                             _____________________________INPUT 7
       if (kslab.eq.0) then
-        if (kresrt.eq.0) read (155,*,err=740) npart,npartz,nparp,nparpz
-     1  ,krandm,dtmod,ncycpt,ncycrp,ncycaf
+        if (kresrt.eq.0) then
+        call read_inhydro_values(155,inhydro_vals,ios)
+        if (ios.ne.0) go to 740
+        read (inhydro_vals,*,err=740) npart,npartz,nparp,nparpz,
+     1  krandm,dtmod,ncycpt,ncycrp,ncycaf
+        endif
         go to 50
       endif
-      if (kslab.le.3) read (155,*,err=740) nparp,nparpz,dtmod,ncycpt
-     1 ,ncycrp,ncycaf
-      if (kslab.gt.3) read (155,*,err=740) porton,dtmod,ncycpt,ncycrp
-     1 ,ncycaf
+      if (kslab.le.3) then
+      call read_inhydro_values(155,inhydro_vals,ios)
+      if (ios.ne.0) go to 740
+      read (inhydro_vals,*,err=740) nparp,nparpz,dtmod,ncycpt,ncycrp,
+     1 ncycaf
+      endif
+      if (kslab.gt.3) then
+      call read_inhydro_values(155,inhydro_vals,ios)
+      if (ios.ne.0) go to 740
+      read (inhydro_vals,*,err=740) porton,dtmod,ncycpt,ncycrp,ncycaf
+      endif
       if (ncycaf.eq.0) ncycaf=100
       nparp=max0(nparp,1)
       nparpz=max0(nparpz,1)
@@ -13783,4 +13835,44 @@ c  assign 150 to kr6
 c  assign 190 to kr7
       go to 50
 c
+      end
+
+
+      subroutine read_inhydro_values(iu,vals,ios)
+      implicit none
+      integer iu, ios
+      character*(*) vals
+      character*512 line
+
+      vals=' '
+   10 read(iu,'(A)',iostat=ios) line
+      if (ios.ne.0) return
+      if (len_trim(line).eq.0) go to 10
+      if (line(1:1).eq.'#'.or.line(1:1).eq.'!') go to 10
+      call strip_inhydro_assignment(line,vals)
+      return
+      end
+
+
+      subroutine strip_inhydro_assignment(line,vals)
+      implicit none
+      character*(*) line, vals
+      integer ieq, icol
+
+      vals=' '
+      ieq=index(line,'=')
+      icol=index(line,':')
+      if (ieq.eq.0.and.icol.eq.0) then
+        vals=adjustl(line)
+      else
+        if (ieq.eq.0) then
+          vals=adjustl(line(icol+1:))
+        else if (icol.eq.0) then
+          vals=adjustl(line(ieq+1:))
+        else if (ieq.lt.icol) then
+          vals=adjustl(line(ieq+1:))
+        else
+          vals=adjustl(line(icol+1:))
+        endif
+      endif
       end

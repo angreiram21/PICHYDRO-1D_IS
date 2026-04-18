@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2026.4.9)  15 APR 2026 17:22
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=pdflatex 2026.4.9)  18 APR 2026 18:19
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -390,74 +390,160 @@ LaTeX Font Info:    Trying to load font information for T1+cmtt on input line 1
 (/usr/share/texlive/texmf-dist/tex/latex/base/t1cmtt.fd
 File: t1cmtt.fd 2019/12/16 v2.5j Standard LaTeX font definitions
 )
-(./Manual_Hydro_1D_IS.toc)
+(./Manual_Hydro_1D_IS.toc [1
+
+{/usr/share/texlive/texmf-dist/fonts/map/pdftex/updmap/pdftex.map}])
 \tf@toc=\write4
 \openout4 = `Manual_Hydro_1D_IS.toc'.
 
- [1
-
-{/usr/share/texlive/texmf-dist/fonts/map/pdftex/updmap/pdftex.map}]
+ [2]
 Overfull \hbox (39.78186pt too wide) in paragraph at lines 50--52
 []\T1/cmtt/m/n/10.95 /plcm1/, /plcm2/, /plcm3/\T1/cmr/m/n/10.95 : large con-tig
 u-ous ar-rays hold-ing field vari-ables through \T1/cmtt/m/n/10.95 equivalence\
 T1/cmr/m/n/10.95 ; 
  []
 
-[2]
+[3]
 LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <12> not available
-(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 88.
+(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 87.
 
-Underfull \vbox (badness 10000) detected at line 101
+Underfull \hbox (badness 3039) in paragraph at lines 133--133
+[]|\T1/cmr/m/n/10.95 Output-control flag (legacy/optional
  []
 
-[3]
-Overfull \hbox (14.04544pt too wide) in paragraph at lines 169--171
+
+Underfull \hbox (badness 1924) in paragraph at lines 134--134
+[]|\T1/cmr/m/n/10.95 Output-control flag (se-lected pro-file
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 141--141
+[]|\T1/cmr/m/n/10.95 Equation-of-state se-lec-tor (neg-a-tive
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 141--141
+\T1/cmr/m/n/10.95 val-ues use tab-u-lated QCD/chiral
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 144--144
+[]|\T1/cmr/m/n/10.95 Spatial scale/discretization con-trol
+ []
+
+
+Underfull \hbox (badness 3803) in paragraph at lines 148--148
+[]|\T1/cmr/m/n/10.95 Frequency (in cy-cles) for particle-
+ []
+
+
+Underfull \vbox (badness 10000) detected at line 150
+ []
+
+[4] [5]
+LaTeX Font Info:    Font shape `T1/cmtt/bx/n' in size <10.95> not available
+(Font)              Font shape `T1/cmtt/m/n' tried instead on input line 197.
+
+Overfull \hbox (49.03531pt too wide) in paragraph at lines 205--206
+ []\T1/cmr/bx/n/10.95 Particle flu-idiza-tion path (\T1/cmtt/m/n/10.95 smash_pa
+rticles.dat\T1/cmr/bx/n/10.95 ).[] \T1/cmr/m/n/10.95 The parser ac-cepts SMASH 
+OS-CAR2013Extended
+ []
+
+[6] [7]
+Overfull \hbox (14.04544pt too wide) in paragraph at lines 314--316
 []\T1/cmr/m/n/10.95 Causality checks are ap-plied (for ex-am-ple, han-dling of 
 states with ex-ces-sively large momentum-
  []
 
-[4] [5]
-Overfull \hbox (3.75935pt too wide) in paragraph at lines 249--252
+[8]
+Overfull \hbox (3.8733pt too wide) in paragraph at lines 356--358
+[]\T1/cmr/m/n/10.95 No ad-di-tional pre-reconstruction vac-u-um-ing with \T1/cm
+tt/m/n/10.95 e_floor/capn_floor \T1/cmr/m/n/10.95 is ap-plied in \T1/cmtt/m/n/1
+0.95 phase3\T1/cmr/m/n/10.95 . 
+ []
+
+[9]
+Underfull \hbox (badness 10000) in paragraph at lines 428--428
+[]|\T1/cmr/m/n/10.95 Analytic hadronic
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 429--429
+[]|\T1/cmtt/m/n/10.95 p = eosgm1*eps +
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 431--431
+[]|\T1/cmr/m/n/10.95 Tabulated chi-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 433--434
+[]|\T1/cmtt/m/n/10.95 T,mu_B,s \T1/cmr/m/n/10.95 from
+ []
+
+
+Underfull \hbox (badness 7832) in paragraph at lines 433--434
+\T1/cmtt/m/n/10.95 temptab/chemtab \T1/cmr/m/n/10.95 and
+ []
+
+
+Underfull \hbox (badness 4254) in paragraph at lines 435--435
+[]|\T1/cmr/m/n/10.95 Legacy al-ter-na-tive
+ []
+
+
+Underfull \vbox (badness 10000) detected at line 438
+ []
+
+[10]
+Overfull \hbox (3.75935pt too wide) in paragraph at lines 500--503
 \T1/cmr/m/n/10.95 Repository \T1/cmtt/m/n/10.95 README.md \T1/cmr/m/n/10.95 giv
 es a base-line com-pi-la-tion com-mand us-ing \T1/cmtt/m/n/10.95 gfortran \T1/c
 mr/m/n/10.95 and \T1/cmtt/m/n/10.95 cornelius.f90\T1/cmr/m/n/10.95 .
  []
 
-
-Underfull \vbox (badness 10000) detected at line 291
+[11]
+Underfull \vbox (badness 10000) detected at line 547
  []
 
-[6] [7] (./Manual_Hydro_1D_IS.aux)
+[12] (./Manual_Hydro_1D_IS.aux)
 Package rerunfilecheck Info: File `Manual_Hydro_1D_IS.out' has not changed.
-(rerunfilecheck)             Checksum: 4F6F919F298549C0A867DC46A79447F5;4669.
+(rerunfilecheck)             Checksum: 3A64DD88FD5AD06C90E288D7FAEC6DD8;6196.
  ) 
 Here is how much of TeX's memory you used:
- 9263 strings out of 481008
- 133630 string characters out of 5909440
- 467034 words of memory out of 5000000
- 26269 multiletter control sequences out of 15000+600000
- 416194 words of font info for 56 fonts, out of 8000000 for 9000
+ 9290 strings out of 481008
+ 133952 string characters out of 5909440
+ 483142 words of memory out of 5000000
+ 26280 multiletter control sequences out of 15000+600000
+ 416820 words of font info for 58 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 71i,11n,74p,395b,435s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 71i,11n,74p,399b,487s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}{/usr
 /share/texlive/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}</usr/share
-/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texli
-ve/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texlive/texm
-f-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/
-fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/ty
-pe1/public/cm-super/sfbx1095.pfb></usr/share/texlive/texmf-dist/fonts/type1/pub
-lic/cm-super/sfbx1200.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/cm-
-super/sfbx1440.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/cm-super/s
-frm0800.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/cm-super/sfrm1095
-.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb></
-usr/share/texlive/texmf-dist/fonts/type1/public/cm-super/sfrm1728.pfb></usr/sha
-re/texlive/texmf-dist/fonts/type1/public/cm-super/sftt1095.pfb></usr/share/texl
-ive/texmf-dist/fonts/type1/public/cm-super/sftt1200.pfb></usr/share/texlive/tex
-mf-dist/fonts/type1/public/cm-super/sftt1728.pfb>
-Output written on Manual_Hydro_1D_IS.pdf (7 pages, 278359 bytes).
+/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texli
+ve/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texlive/tex
+mf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texlive/texmf-dist
+/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist/fonts/
+type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/p
+ublic/amsfonts/cm/cmr6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/am
+sfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/c
+m/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy
+8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/cm-super/sfbx1095.pfb><
+/usr/share/texlive/texmf-dist/fonts/type1/public/cm-super/sfbx1200.pfb></usr/sh
+are/texlive/texmf-dist/fonts/type1/public/cm-super/sfbx1440.pfb></usr/share/tex
+live/texmf-dist/fonts/type1/public/cm-super/sfrm0800.pfb></usr/share/texlive/te
+xmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb></usr/share/texlive/texmf-dis
+t/fonts/type1/public/cm-super/sfrm1200.pfb></usr/share/texlive/texmf-dist/fonts
+/type1/public/cm-super/sfrm1728.pfb></usr/share/texlive/texmf-dist/fonts/type1/
+public/cm-super/sftt1095.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
+cm-super/sftt1200.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/cm-supe
+r/sftt1728.pfb>
+Output written on Manual_Hydro_1D_IS.pdf (12 pages, 349819 bytes).
 PDF statistics:
- 283 PDF objects out of 1000 (max. 8388607)
- 257 compressed objects within 3 object streams
- 67 named destinations out of 1000 (max. 500000)
- 217 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 361 PDF objects out of 1000 (max. 8388607)
+ 324 compressed objects within 4 object streams
+ 82 named destinations out of 1000 (max. 500000)
+ 265 words of extra memory for PDF output out of 10000 (max. 10000000)
 

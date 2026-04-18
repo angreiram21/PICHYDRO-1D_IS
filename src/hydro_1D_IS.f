@@ -1029,6 +1029,9 @@ c       write (156,50) ijk
 c     cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       subroutine readinput
+      use ic_smash, only: smash_ic_options, read_smash_ic
+      use fluidization_smash, only: fluidization_options,
+     1 fluidize_smash_particles
 c   Modified February 2023 by Volodymyr & Angel: we've changed the units of
 c   the energy density 
 c
@@ -1084,7 +1087,15 @@ c     Feb 2005 - changed to read input from fort.100
       character*256 hline1, hline2, hline3, hline4, hline5, hline6,
      1 hline7, hline8
       integer ios_hdr, ipos, ieq, ieq2
-      logical hash_header
+      logical hash_header, have_smash_ic, have_smash_particles,
+     1 have_smash_particles_uc,
+     2 have_smash_particles_oscar,
+     1 use_smash_module
+      type(smash_ic_options) smash_opts
+      type(fluidization_options) fluid_opts
+      integer ierr_smash, n_loaded_smash, n_particles_smash
+      real*8 x0hydro, y0hydro, z0hydro
+      character*256 smash_particle_file
       dimension nypt(700)
       equivalence (aa1(1),u), (aa1(2),v), (aa1(3),w), (aa2(1),capn),
      1 (aa2(2),p), (aa2(3),e), (aa3(1),xmom), (aa3(2),ymom), (aa3(3)
@@ -1139,6 +1150,13 @@ c       write (156,1190)
 c       write (156,1080) npart,npartz,nparp,nparpz
 c       write (156,1190)
       if (nparpz.ne.npartz) nparpz=npartz
+      inquire(file='../input/smash_ic.dat',exist=have_smash_ic)
+      inquire(file='../input/smash_particles.dat',exist=have_smash_particles)
+      inquire(file='../input/SMASH_IC.dat',exist=have_smash_particles_uc)
+      inquire(file='../input/SMASH_IC.oscar',exist=have_smash_particles_oscar)
+      use_smash_module=have_smash_ic.or.have_smash_particles.or.
+     1 have_smash_particles_uc.or.have_smash_particles_oscar
+      if (.not.use_smash_module) then
       open(unit=100,file='../input/fort.100')
       rewind 100
       read (100,'(A)',iostat=ios_hdr) hline1
@@ -1253,6 +1271,11 @@ c       write (156,1190)
       write(*,*) 'Bad dz value in fort.100 header'
       stop 9027
       endif
+      endif
+      else
+      dxv=dx
+      dyv=dy
+      dzv=dz
       endif
 
       nparp2=nparp**2 ! nparp2=9
@@ -1370,6 +1393,113 @@ c        Instead of ESRM calc. we have now
       sum_press=0.
       
       sum_wijk=0.
+      if (use_smash_module) then
+      if (have_smash_particles.or.have_smash_particles_uc.or.
+     1 have_smash_particles_oscar) then
+      smash_particle_file='../input/smash_particles.dat'
+      if (have_smash_particles_oscar)
+     1 smash_particle_file='../input/SMASH_IC.oscar'
+      if (have_smash_particles_uc) smash_particle_file='../input/SMASH_IC.dat'
+      fluid_opts%particle_file=smash_particle_file
+      fluid_opts%has_header=.true.
+      fluid_opts%input_milne_tau_eta=.true.
+      fluid_opts%propagate_to_target_t=.true.
+      fluid_opts%drop_if_t_above_target=.true.
+      fluid_opts%filter_oscar_spectators=.true.
+      fluid_opts%spectator_abs_rapidity_cut=1.5d0
+      fluid_opts%target_t=t0
+      fluid_opts%input_momentum_in_gev=.true.
+      fluid_opts%input_energy_in_gev=.true.
+      fluid_opts%use_gaussian_kernel=.true.
+      fluid_opts%sigma_x=dx
+      fluid_opts%sigma_y=dy
+      fluid_opts%sigma_z=dz
+      fluid_opts%kernel_half_width=2
+      x0hydro=-0.5d0*dble(ibar)*dx
+      y0hydro=-0.5d0*dble(jbar)*dy
+      z0hydro=-0.5d0*dble(kbar)*dz
+      call fluidize_smash_particles(fluid_opts,ibar,jbar,kbar,nq,ijbar,
+     1 dx,dy,dz,x0hydro,y0hydro,z0hydro,dxdydz,e,p,pressure,u,v,w,xmom,
+     2 ymom,zmom,n_particles_smash,ierr_smash)
+      if (ierr_smash.ne.0) then
+      write(*,*) 'Error fluidizing SMASH particles, ierr=',ierr_smash
+      stop 9031
+      endif
+      write(*,*) 'SMASH particles fluidized: ',n_particles_smash
+      else
+      smash_opts%filename='../input/smash_ic.dat'
+      smash_opts%has_header=.true.
+      smash_opts%convert_gev_to_mev=.true.
+      smash_opts%clamp_superluminal=.true.
+      smash_opts%min_nb=0.0d0
+      smash_opts%min_e=0.0d0
+      call read_smash_ic(smash_opts,ibar,jbar,kbar,nq,ijbar,dxdydz,e,p,
+     1 pressure,u,v,w,xmom,ymom,zmom,n_loaded_smash,ierr_smash)
+      if (ierr_smash.ne.0) then
+      write(*,*) 'Error reading SMASH IC grid, ierr=',ierr_smash
+      stop 9032
+      endif
+      write(*,*) 'SMASH IC grid cells loaded: ',n_loaded_smash
+      endif
+
+      do 125 k1=1,kbar
+      do 124 j1=1,jbar
+      do 123 i1=1,ibar
+      ijk=nq*(ijbar*(k1-1)+ibar*(j1-1)+i1-1)+1
+      if (p(ijk).le.0.) go to 123
+      eijk=e(ijk)
+      anijk=p(ijk)
+      pressijk=pressure(ijk)
+      wijk=w(ijk)
+      zmomijk=zmom(ijk)
+      xmomijk=xmom(ijk)
+      ymomijk=ymom(ijk)
+      i6=i6+1
+      egsum=egsum+eijk
+      agsum=agsum+anijk
+      egsum_prueba=egsum_prueba+eijk
+      agsum_prueba=agsum_prueba+anijk
+      sum_zmomijk=sum_zmomijk+zmomijk
+      sum_press=sum_press+pressijk
+      sum_wijk=sum_wijk+abs(wijk)
+      presin=presin+pressijk
+      if (anijk.gt.anmax) anmax=anijk
+      if (abs(xmomijk).gt.umaxmx) umaxmx=abs(xmomijk)
+      if (abs(ymomijk).gt.umaxmy) umaxmy=abs(ymomijk)
+      if (abs(zmomijk).gt.umaxmz) umaxmz=abs(zmomijk)
+      if (abs(wijk).gt.umaxw) umaxw=abs(wijk)
+      aan=aan+anijk
+      een=een+eijk
+      if (zmomijk.gt.0.) zmomps=zmomps+zmomijk
+      if (zmomijk.lt.0.) zmomng=zmomng+zmomijk
+      xncont(i1)=xncont(i1)+anijk*dxdydz
+      xecont(i1)=xecont(i1)+eijk*dxdydz
+      xzcont(i1)=xzcont(i1)+zmomijk
+      yncont(j1)=yncont(j1)+anijk*dxdydz
+      yecont(j1)=yecont(j1)+eijk*dxdydz
+      yzcont(j1)=yzcont(j1)+zmomijk
+      zncont(k1)=zncont(k1)+anijk*dxdydz
+      zecont(k1)=zecont(k1)+eijk*dxdydz
+      zzcont(k1)=zzcont(k1)+zmomijk
+      if (i1min.gt.i1) i1min=i1
+      if (i1max.lt.i1) i1max=i1
+      if (j1min.gt.j1) j1min=j1
+      if (j1max.lt.j1) j1max=j1
+      if (k1min.gt.k1) k1min=k1
+      if (k1max.lt.k1) k1max=k1
+      if (k1.lt.klmin) klmin=k1
+      if (k1.gt.krmax) krmax=k1
+      if (ipmin.gt.i1) ipmin=i1
+      if (ipmax.lt.i1) ipmax=i1
+  123 continue
+  124 continue
+  125 continue
+      if (i6.le.0) then
+      write(*,*) 'No non-zero cells after SMASH initialization'
+      stop 9033
+      endif
+      go to 130
+      endif
 c                      READING DATA FROM FORT.100 FILE   
   120 read (100,*,end=130) i1,j1,k1,eijk,anijk,pressijk,wijk,uijk,vijk
      1 ,zmomijk,xmomijk,ymomijk 

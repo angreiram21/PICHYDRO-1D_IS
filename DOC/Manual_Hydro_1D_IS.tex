@@ -183,6 +183,87 @@ inside \texttt{readinput}. The file format is:
 The code converts GeV-based input fields to MeV-based internal fields
 for the evolution pipeline.
 
+\subsection{\texttt{input/smash\_ic.dat} and SMASH particle outputs}
+The current \texttt{readinput} implementation auto-detects SMASH inputs:
+\begin{itemize}
+\item if \texttt{../input/SMASH\_IC.dat} exists, particle fluidization is used;
+\item else if \texttt{../input/SMASH\_IC.oscar} exists, particle fluidization is used;
+\item else if \texttt{../input/smash\_particles.dat} exists, particle fluidization is used;
+\item else if \texttt{../input/smash\_ic.dat} exists, direct cell-grid loading is used;
+\item otherwise, the legacy \texttt{fort.100} path is used.
+\end{itemize}
+
+\paragraph{Direct grid path (\texttt{smash\_ic.dat}).}
+The expected line format is:
+\begin{verbatim}
+i j k e nb p w u v t0z t0x t0y
+\end{verbatim}
+with energy/momentum entries interpreted as GeV-based quantities and converted
+internally to MeV-based fields.
+
+\paragraph{Particle fluidization path (\texttt{smash\_particles.dat}).}
+The parser accepts SMASH OSCAR2013Extended IC lines:
+\begin{verbatim}
+t x y z mass p0 px py pz pdg ID charge ncoll form_time xsecfac
+proc_id_origin proc_type_origin time_last_coll pdg_mother1 pdg_mother2
+baryon_number strangeness
+\end{verbatim}
+where \texttt{t,x,y,z} are already Cartesian coordinates and \texttt{p0} is
+the particle energy.
+
+For \texttt{SMASH\_IC.oscar}, a spectator-rejection filter is applied by
+default before deposition. A particle is tagged as spectator and removed if:
+\begin{itemize}
+\item \(|B|\ge 1\) (non-zero baryon number),
+\item nucleon PDG (\(\pm2212\) or \(\pm2112\)),
+\item \texttt{ncoll}=0,
+\item \(|y| \ge y_{\mathrm{cut}}\), with
+\(y=\frac{1}{2}\ln\!\left(\frac{p_0+p_z}{p_0-p_z}\right)\) and default
+\(y_{\mathrm{cut}}=1.5\).
+\end{itemize}
+This removes beam-like spectators while keeping interacting baryons and
+produced hadrons in the fluidization sample.
+
+It also accepts the SMASH ASCII IC line format:
+\begin{verbatim}
+tau x y eta mt px py Rap pdg charge baryon_number strangeness
+\end{verbatim}
+where \texttt{tau} and \texttt{eta} are Milne coordinates from a
+constant-\(\tau\) hypersurface.
+
+For backward compatibility, a legacy 9-column variant is also accepted:
+\begin{verbatim}
+tau eta_s x y px py pz E baryon
+\end{verbatim}
+
+The code first maps each particle to Cartesian coordinates:
+\begin{align*}
+t_i &= \tau_i \cosh(\eta_{s,i}),\\
+z_i &= \tau_i \sinh(\eta_{s,i}).
+\end{align*}
+Then each particle is propagated to a common Cartesian start time
+\(t=t_{\mathrm{target}}\) before deposition:
+\begin{align*}
+\Delta t_i &= t_{\mathrm{target}}-t_i,\\
+x_i' &= x_i + v_{x,i}\Delta t_i,\\
+y_i' &= y_i + v_{y,i}\Delta t_i,\\
+z_i' &= z_i + v_{z,i}\Delta t_i.
+\end{align*}
+Here \(v_{\alpha,i}=p_{\alpha,i}/E_i\) (with a causal clamp if needed).
+If \texttt{t0} from hydro input is positive, it is used as
+\(t_{\mathrm{target}}\); otherwise the maximum particle \(t_i\) found in the
+file is used so all retained particles are synchronized at a single
+Cartesian time slice.
+
+For validation, the fluidization module prints automatic pre/post mapping
+diagnostics:
+\begin{itemize}
+\item particle counts before and after mapping/selection;
+\item \(\sum E\), \(\sum P_x\), \(\sum P_y\), \(\sum P_z\), \(\sum B\) pre/post;
+\item energy-weighted centroids \(\langle x\rangle_E\), \(\langle y\rangle_E\),
+      \(\langle z\rangle_E\), \(\langle t\rangle_E\) pre/post.
+\end{itemize}
+
 \section{High-Level Execution Flow}
 \subsection{Initialization phase}
 \begin{enumerate}
@@ -211,7 +292,13 @@ for the evolution pipeline.
 \subsection{Step A: field and marker initialization (\texttt{readinput})}
 \begin{itemize}
 \item The mesh dimensions \texttt{ibar, jbar, kbar} are set from memory limits.
-\item Cell arrays are zeroed and then filled from \texttt{fort.100}.
+\item Cell arrays are zeroed and then filled from one of three sources:
+      \texttt{smash\_particles.dat}, \texttt{smash\_ic.dat}, or
+      (fallback) \texttt{fort.100}.
+\item For \texttt{smash\_particles.dat}, particles given on constant
+      \(\tau\) are converted to \((t,z)\), synchronized to common \(t\),
+      and deposited on the Cartesian hydro grid with configurable Gaussian
+      smearing.
 \item The imported profile is shifted to the hydro mesh center.
 \item Marker weight \texttt{dpt} is computed from total baryon content and
       target marker occupancy.
@@ -417,8 +504,13 @@ Repository \texttt{README.md} gives a baseline compilation command using
 A minimal run checklist is:
 \begin{enumerate}
 \item place \texttt{inhydro} in \texttt{input/};
-\item provide \texttt{fort.100} in \texttt{input/};
+\item provide one initialization source in \texttt{input/}:
+      \texttt{smash\_particles.dat} or \texttt{smash\_ic.dat} or
+      \texttt{fort.100};
 \item ensure \texttt{kslab=8} in \texttt{inhydro};
+\item if using \texttt{smash\_particles.dat}, set \texttt{t0} consistently
+      with your intended Cartesian hydro start time (or keep \texttt{t0<=0}
+      to auto-synchronize to \(\max t_i\));
 \item run executable from a directory where relative paths
       \texttt{../input/*} are valid.
 \end{enumerate}
@@ -441,7 +533,7 @@ stage.
 Routine & Role \\\hline
 \texttt{hydro} & Program entry point, input parsing, setup, call to \texttt{picrel}. \\\hline
 \texttt{picrel} & Main evolution driver and cycle loop. \\\hline
-\texttt{readinput} & Event initialization from \texttt{fort.100} and marker generation. \\\hline
+\texttt{readinput} & Event initialization from SMASH files or \texttt{fort.100}, plus marker generation. \\\hline
 \texttt{phase1} & Cell-field Eulerian update in conservative variables. \\\hline
 \texttt{phase2} & Marker advection and cell-to-cell transfer of extensive quantities. \\\hline
 \texttt{phase3} & Reconstruction of local rest-frame thermodynamics and velocities. \\\hline

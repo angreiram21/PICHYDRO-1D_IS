@@ -6,4 +6,6 @@ keqost_icysum_krandm_tnc = -3 301 1 10
 jdim1 = 3
 porton_dtmod_ncycpt_ncycrp_ncycaf = .95 0.2 10 10 1
 npart_npartz = 3 3
-eta_t0_cut = 2.0
+eta_t0_cut = 3.5
+auto_target_t_max = 3.0
+init_source_mode = 1

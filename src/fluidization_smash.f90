@@ -66,11 +66,13 @@ contains
     real(8) :: t_part, x_part, y_part, z_part
     real(8) :: vx, vy, vz, dt_prop
     real(8) :: target_t_eff, tiny, target_t_raw
-    real(8) :: time_drop_fraction
+    real(8) :: time_drop_fraction, escale_diag, pscale_diag
     real(8) :: sum_e_pre, sum_px_pre, sum_py_pre, sum_pz_pre, sum_b_pre
     real(8) :: sum_ex_pre, sum_ey_pre, sum_ez_pre, sum_et_pre
     real(8) :: sum_e_post, sum_px_post, sum_py_post, sum_pz_post, sum_b_post
     real(8) :: sum_ex_post, sum_ey_post, sum_ez_post, sum_et_post
+    real(8) :: sum_s_pre, sum_s_post
+    real(8) :: sum_e_fluid, sum_px_fluid, sum_py_fluid, sum_pz_fluid, sum_b_fluid, sum_s_fluid
     logical :: has_event_markers, in_event
     integer :: nbuf, ncap
     real(8), allocatable :: buf_t(:), buf_x(:), buf_y(:), buf_z(:)
@@ -82,6 +84,7 @@ contains
     real(8) :: sum_ex_pre_evt, sum_ey_pre_evt, sum_ez_pre_evt, sum_et_pre_evt
     real(8) :: sum_e_post_evt, sum_px_post_evt, sum_py_post_evt, sum_pz_post_evt, sum_b_post_evt
     real(8) :: sum_ex_post_evt, sum_ey_post_evt, sum_ez_post_evt, sum_et_post_evt
+    real(8) :: sum_s_pre_evt, sum_s_post_evt
 
     n_particles = 0
     ierr = 0
@@ -113,6 +116,19 @@ contains
     sum_ey_post = 0.0d0
     sum_ez_post = 0.0d0
     sum_et_post = 0.0d0
+    sum_s_pre = 0.0d0
+    sum_s_post = 0.0d0
+
+    if (opts%input_energy_in_gev) then
+      escale_diag = 1000.0d0
+    else
+      escale_diag = 1.0d0
+    end if
+    if (opts%input_momentum_in_gev) then
+      pscale_diag = 1000.0d0
+    else
+      pscale_diag = 1.0d0
+    end if
 
     call zero_hydro_arrays(ibar, jbar, kbar, nq, ijbar, e, capn, pressure, &
                            u, v, w, xmom, ymom, zmom)
@@ -186,15 +202,16 @@ contains
       end if
 
       n_prefilter_evt = n_prefilter_evt + 1
-      sum_e_pre_evt = sum_e_pre_evt + ep
-      sum_px_pre_evt = sum_px_pre_evt + px
-      sum_py_pre_evt = sum_py_pre_evt + py
-      sum_pz_pre_evt = sum_pz_pre_evt + pz
+      sum_e_pre_evt = sum_e_pre_evt + ep * escale_diag
+      sum_px_pre_evt = sum_px_pre_evt + px * pscale_diag
+      sum_py_pre_evt = sum_py_pre_evt + py * pscale_diag
+      sum_pz_pre_evt = sum_pz_pre_evt + pz * pscale_diag
       sum_b_pre_evt = sum_b_pre_evt + baryon
-      sum_ex_pre_evt = sum_ex_pre_evt + ep * x_part
-      sum_ey_pre_evt = sum_ey_pre_evt + ep * y_part
-      sum_ez_pre_evt = sum_ez_pre_evt + ep * z_part
-      sum_et_pre_evt = sum_et_pre_evt + ep * t_part
+      sum_ex_pre_evt = sum_ex_pre_evt + ep * escale_diag * x_part
+      sum_ey_pre_evt = sum_ey_pre_evt + ep * escale_diag * y_part
+      sum_ez_pre_evt = sum_ez_pre_evt + ep * escale_diag * z_part
+      sum_et_pre_evt = sum_et_pre_evt + ep * escale_diag * t_part
+      sum_s_pre_evt = sum_s_pre_evt + entropy_proxy_scalar(ep * escale_diag)
 
       if (ep <= tiny) then
         n_dropped_zeroe_evt = n_dropped_zeroe_evt + 1
@@ -233,6 +250,9 @@ contains
     call finalize_hydro_from_tensors(ibar, jbar, kbar, nq, ijbar, dxdydz, &
                                      opts%min_e, opts%min_nb, e, capn, pressure, &
                                      u, v, w, xmom, ymom, zmom)
+    call compute_fluid_stage_totals(ibar, jbar, kbar, nq, ijbar, dxdydz, e, capn, pressure, &
+                                    xmom, ymom, zmom, sum_e_fluid, sum_px_fluid, sum_py_fluid, &
+                                    sum_pz_fluid, sum_b_fluid, sum_s_fluid)
     write(*,'(A,I10)') 'Fluidization: events averaged = ', n_events
     write(*,'(A,I10)') 'Fluidization: particles kept (sum over events) = ', n_particles
     if (n_dropped_time > 0) then
@@ -257,6 +277,10 @@ contains
                                    sum_ex_pre, sum_ey_pre, sum_ez_pre, sum_et_pre, &
                                    sum_e_post, sum_px_post, sum_py_post, sum_pz_post, sum_b_post, &
                                    sum_ex_post, sum_ey_post, sum_ez_post, sum_et_post)
+    call print_conservation_table(n_events, sum_e_pre, sum_px_pre, sum_py_pre, sum_pz_pre, sum_b_pre, &
+                                  sum_s_pre, sum_e_post, sum_px_post, sum_py_post, sum_pz_post, &
+                                  sum_b_post, sum_s_post, sum_e_fluid, sum_px_fluid, sum_py_fluid, &
+                                  sum_pz_fluid, sum_b_fluid, sum_s_fluid)
     if (opts%propagate_to_target_t) then
       call print_yellow_mapping_warning(-1.0d0)
     end if
@@ -287,6 +311,8 @@ contains
       sum_ey_post_evt = 0.0d0
       sum_ez_post_evt = 0.0d0
       sum_et_post_evt = 0.0d0
+      sum_s_pre_evt = 0.0d0
+      sum_s_post_evt = 0.0d0
     end subroutine reset_event_state
 
     subroutine flush_event(count_event)
@@ -352,15 +378,16 @@ contains
           t_part = target_t_eff
         end if
 
-        sum_e_post_evt = sum_e_post_evt + ep
-        sum_px_post_evt = sum_px_post_evt + px
-        sum_py_post_evt = sum_py_post_evt + py
-        sum_pz_post_evt = sum_pz_post_evt + pz
+        sum_e_post_evt = sum_e_post_evt + ep * escale_diag
+        sum_px_post_evt = sum_px_post_evt + px * pscale_diag
+        sum_py_post_evt = sum_py_post_evt + py * pscale_diag
+        sum_pz_post_evt = sum_pz_post_evt + pz * pscale_diag
         sum_b_post_evt = sum_b_post_evt + baryon
-        sum_ex_post_evt = sum_ex_post_evt + ep * x_part
-        sum_ey_post_evt = sum_ey_post_evt + ep * y_part
-        sum_ez_post_evt = sum_ez_post_evt + ep * z_part
-        sum_et_post_evt = sum_et_post_evt + ep * t_part
+        sum_ex_post_evt = sum_ex_post_evt + ep * escale_diag * x_part
+        sum_ey_post_evt = sum_ey_post_evt + ep * escale_diag * y_part
+        sum_ez_post_evt = sum_ez_post_evt + ep * escale_diag * z_part
+        sum_et_post_evt = sum_et_post_evt + ep * escale_diag * t_part
+        sum_s_post_evt = sum_s_post_evt + entropy_proxy_scalar(ep * escale_diag)
 
         call deposit_particle(opts, ibar, jbar, kbar, nq, ijbar, dx, dy, dz, &
                               x0, y0, z0, x_part, y_part, z_part, px, py, pz, ep, baryon, &
@@ -390,6 +417,8 @@ contains
       sum_ey_post = sum_ey_post + sum_ey_post_evt
       sum_ez_post = sum_ez_post + sum_ez_post_evt
       sum_et_post = sum_et_post + sum_et_post_evt
+      sum_s_pre = sum_s_pre + sum_s_pre_evt
+      sum_s_post = sum_s_post + sum_s_post_evt
 
       if (count_event) then
         write(*,'(A,I6,A,I8,A,I8,A,I8,A,1PE12.4)') &
@@ -565,7 +594,7 @@ contains
     integer :: r
     real(8) :: wx, wy, wz, wtot
     real(8) :: dxp, dyp, dzp
-    real(8) :: escale, pscale
+    real(8) :: escale, pscale, inv_cell_volume, cell_volume
 
     if (opts%input_energy_in_gev) then
       escale = 1000.0d0
@@ -579,6 +608,13 @@ contains
       pscale = 1.0d0
     end if
 
+    cell_volume = dx * dy * dz
+    if (cell_volume > 0.0d0) then
+      inv_cell_volume = 1.0d0 / cell_volume
+    else
+      inv_cell_volume = 0.0d0
+    end if
+
     ic = int((xp - x0) / dx) + 1
     jc = int((yp - y0) / dy) + 1
     kc = int((zp - z0) / dz) + 1
@@ -588,11 +624,11 @@ contains
       if (jc < 1 .or. jc > jbar) return
       if (kc < 1 .or. kc > kbar) return
       ijk = nq * (ijbar * (kc - 1) + ibar * (jc - 1) + ic - 1) + 1
-      e(ijk) = e(ijk) + ep * escale
-      capn(ijk) = capn(ijk) + baryon
-      xmom(ijk) = xmom(ijk) + px * pscale
-      ymom(ijk) = ymom(ijk) + py * pscale
-      zmom(ijk) = zmom(ijk) + pz * pscale
+      e(ijk) = e(ijk) + ep * escale * inv_cell_volume
+      capn(ijk) = capn(ijk) + baryon * inv_cell_volume
+      xmom(ijk) = xmom(ijk) + px * pscale * inv_cell_volume
+      ymom(ijk) = ymom(ijk) + py * pscale * inv_cell_volume
+      zmom(ijk) = zmom(ijk) + pz * pscale * inv_cell_volume
       return
     end if
 
@@ -643,11 +679,11 @@ contains
           ijk = nq * (ijbar * (k - 1) + ibar * (j - 1) + i - 1) + 1
 
           wx = (wx * wy * wz) / wtot
-          e(ijk) = e(ijk) + wx * ep * escale
-          capn(ijk) = capn(ijk) + wx * baryon
-          xmom(ijk) = xmom(ijk) + wx * px * pscale
-          ymom(ijk) = ymom(ijk) + wx * py * pscale
-          zmom(ijk) = zmom(ijk) + wx * pz * pscale
+          e(ijk) = e(ijk) + wx * ep * escale * inv_cell_volume
+          capn(ijk) = capn(ijk) + wx * baryon * inv_cell_volume
+          xmom(ijk) = xmom(ijk) + wx * px * pscale * inv_cell_volume
+          ymom(ijk) = ymom(ijk) + wx * py * pscale * inv_cell_volume
+          zmom(ijk) = zmom(ijk) + wx * pz * pscale * inv_cell_volume
         end do
       end do
     end do
@@ -707,6 +743,100 @@ contains
       end do
     end do
   end subroutine scale_conserved_arrays
+
+
+  subroutine compute_fluid_stage_totals(ibar, jbar, kbar, nq, ijbar, dxdydz, e, capn, pressure, &
+                                        xmom, ymom, zmom, se, spx, spy, spz, sb, ss)
+    integer, intent(in) :: ibar, jbar, kbar, nq, ijbar
+    real(8), intent(in) :: dxdydz
+    real(8), intent(in) :: e(*), capn(*), pressure(*), xmom(*), ymom(*), zmom(*)
+    real(8), intent(out) :: se, spx, spy, spz, sb, ss
+    integer :: i, j, k, ijk
+
+    se = 0.0d0
+    spx = 0.0d0
+    spy = 0.0d0
+    spz = 0.0d0
+    sb = 0.0d0
+    ss = 0.0d0
+
+    do k = 1, kbar
+      do j = 1, jbar
+        do i = 1, ibar
+          ijk = nq * (ijbar * (k - 1) + ibar * (j - 1) + i - 1) + 1
+          se = se + e(ijk) * dxdydz
+          spx = spx + xmom(ijk) * dxdydz
+          spy = spy + ymom(ijk) * dxdydz
+          spz = spz + zmom(ijk) * dxdydz
+          sb = sb + capn(ijk) * dxdydz
+          ss = ss + entropy_proxy_scalar(max(e(ijk) + pressure(ijk), 0.0d0)) * dxdydz
+        end do
+      end do
+    end do
+  end subroutine compute_fluid_stage_totals
+
+
+  real(8) function entropy_proxy_scalar(x)
+    real(8), intent(in) :: x
+    real(8), parameter :: tiny = 1.0d-20
+    if (x <= tiny) then
+      entropy_proxy_scalar = 0.0d0
+    else
+      entropy_proxy_scalar = x ** 0.75d0
+    end if
+  end function entropy_proxy_scalar
+
+
+  subroutine print_conservation_table(n_events, e_pre, px_pre, py_pre, pz_pre, b_pre, s_pre, &
+                                      e_post, px_post, py_post, pz_post, b_post, s_post, &
+                                      e_fl, px_fl, py_fl, pz_fl, b_fl, s_fl)
+    integer, intent(in) :: n_events
+    real(8), intent(in) :: e_pre, px_pre, py_pre, pz_pre, b_pre, s_pre
+    real(8), intent(in) :: e_post, px_post, py_post, pz_post, b_post, s_post
+    real(8), intent(in) :: e_fl, px_fl, py_fl, pz_fl, b_fl, s_fl
+    real(8) :: norm, a_e_pre, a_px_pre, a_py_pre, a_pz_pre, a_b_pre, a_s_pre
+    real(8) :: a_e_post, a_px_post, a_py_post, a_pz_post, a_b_post, a_s_post
+    real(8) :: a_e_fl, a_px_fl, a_py_fl, a_pz_fl, a_b_fl, a_s_fl
+    character(len=*), parameter :: c_blue = achar(27)//'[34m'
+    character(len=*), parameter :: c_reset = achar(27)//'[0m'
+
+    norm = 1.0d0
+    if (n_events > 1) norm = dble(n_events)
+
+    a_e_pre = e_pre / norm
+    a_px_pre = px_pre / norm
+    a_py_pre = py_pre / norm
+    a_pz_pre = pz_pre / norm
+    a_b_pre = b_pre / norm
+    a_s_pre = s_pre / norm
+
+    a_e_post = e_post / norm
+    a_px_post = px_post / norm
+    a_py_post = py_post / norm
+    a_pz_post = pz_post / norm
+    a_b_post = b_post / norm
+    a_s_post = s_post / norm
+
+    ! Fluid stage is already per-event averaged when n_events>1.
+    a_e_fl = e_fl
+    a_px_fl = px_fl
+    a_py_fl = py_fl
+    a_pz_fl = pz_fl
+    a_b_fl = b_fl
+    a_s_fl = s_fl
+
+    write(*,'(A)') c_blue//'================ Conservation Check (Blue) ================'
+    if (n_events > 1) then
+      write(*,'(A,I8)') 'Averaged over events: ', n_events
+    else
+      write(*,'(A)') 'Single-event initialization'
+    end if
+    write(*,'(A)') 'Stage                  E_tot        Px_tot       Py_tot       Pz_tot       B_tot        S_proxy'
+    write(*,'(A,6(1X,1PE12.4))') 'Before mapping     ', a_e_pre, a_px_pre, a_py_pre, a_pz_pre, a_b_pre, a_s_pre
+    write(*,'(A,6(1X,1PE12.4))') 'After mapping      ', a_e_post, a_px_post, a_py_post, a_pz_post, a_b_post, a_s_post
+    write(*,'(A,6(1X,1PE12.4))') 'After fluidization ', a_e_fl, a_px_fl, a_py_fl, a_pz_fl, a_b_fl, a_s_fl
+    write(*,'(A)') '============================================================'//c_reset
+  end subroutine print_conservation_table
 
 
   subroutine resize_real8_array(arr, new_size, ierr)

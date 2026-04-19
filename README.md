@@ -1,8 +1,8 @@
-Compile and link:
-mkdir build
-cd build
-gfortran -ffixed-line-length-none -c ../src/ic_smash.f90 ../src/fluidization_smash.f90 ../src/hydro_1D_IS.f ../src/cornelius.f90 -mcmodel=large
-gfortran -mcmodel=large *.o -o hydro
+Compile and link (objects/modules are written inside `build/`):
+make
+
+Run:
+./build/hydro
 
 `input/inhydro` now accepts labeled entries:
 - `name = values`
@@ -49,6 +49,12 @@ Optional `inhydro` flag for SMASH Milne input:
   `SMASH_IC.dat`), instead of `max(t_i)`.
 - if missing or `eta_t0_cut <= 0`, the previous `max(t_i)` logic is used.
 
+Optional `inhydro` source-selection flag:
+- add one extra line after `eta_t0_cut` with `init_source_mode`.
+- `init_source_mode = 1`: force SMASH path (requires SMASH input file).
+- `init_source_mode = 0`: force GESRM/legacy hydro-field path.
+- `init_source_mode = -1` (or missing): auto-detect (current default behavior).
+
 Safety mechanism for auto-selected `target_t`:
 - when `t0<=0`, raw `target_t=max(t_i)` is clamped to `[0.05, 3.0] fm/c`
   (configurable in `fluidization_options`);
@@ -63,6 +69,8 @@ Automatic mapping diagnostics are printed at initialization:
 - particle counts pre/post mapping,
 - `sum(E), sum(Px), sum(Py), sum(Pz), sum(B)` pre/post,
 - energy-weighted centroids `<x>_E, <y>_E, <z>_E, <t>_E` pre/post.
+- blue conservation table with three stages (before mapping / after mapping /
+  after fluidization), including `E,Px,Py,Pz,B` and `S_proxy`.
 
 
 

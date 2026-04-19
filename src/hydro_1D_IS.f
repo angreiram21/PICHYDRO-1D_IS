@@ -7,12 +7,14 @@ c   krandm parameter is now read from inhydro file: line 5, colunm 3
       implicit real*8 (a-h,o-z)
       parameter (maxfsiz=100)
       character infile*(maxfsiz), outfile*(maxfsiz), instat*(maxfsiz),
-     1 instaf, outpath*(maxfsiz+7)
+     1 instaf, outpath*(maxfsiz+10), outdir*10
       character*512 inhydro_vals
       character kstrng, iss, isu, isr, ibl
-      integer ios
+      integer ios, loutdir, is_smash_init
+      logical has_inhydro
 c
       common /files/ outfile, infile, linfile, loutfile
+      common /initmode/ is_smash_init
       common /files1/ instaf(100)
       common /myl/ kstrng(100)
       common /plcm1/ aa1(91627237)
@@ -69,6 +71,7 @@ c
       totpycornelius=0.
       totpzcornelius=0.
       totbarcornelius=0.
+      is_smash_init=0
       nevent=-1
       kresrt=0
       do 10 i=1,80
@@ -76,6 +79,12 @@ c
    10 continue
 c                  READING FROM INHYDRO FILE
       infile='../input/inhydro'
+      inquire(file=infile,exist=has_inhydro)
+      if (.not.has_inhydro) then
+      infile='input/inhydro'
+      inquire(file=infile,exist=has_inhydro)
+      endif
+      if (.not.has_inhydro) infile='inhydro'
       linfile=mylenc(infile)
       open (155,file=infile(1:linfile),iostat=ios,status='old',err=190)
       rewind 155
@@ -97,8 +106,11 @@ c                  READING FROM INHYDRO FILE
       if (ios.ne.0) go to 300
       read (inhydro_vals,370,err=300) outfile
       loutfile=mylenc(outfile)
-      outpath='output/'//outfile(1:loutfile)
-      open (156,file=outpath(1:loutfile+7),status='unknown',err=200)
+      outdir='output/'
+      if (infile(1:3).eq.'../') outdir='../output/'
+      loutdir=mylenc(outdir)
+      outpath=outdir(1:loutdir)//outfile(1:loutfile)
+      open (156,file=outpath(1:loutfile+loutdir),status='unknown',err=200)
 c       write (156,*) ioptos1,ioptos2,ioptos3,ioptos4,kdebug,kslab
 c       write (156,320) id
 c       write (156,530)
@@ -506,7 +518,7 @@ c yte<.5
 c  evaluate quantities for the level j'=j
 c  center cell- 1
       ijk=ijkb
-      if (capn(ijk).eq.0.) go to 80
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 80
       sq=sx0*syz*sz0
       sumu=sumu+u(ijk)*sq
       sumv=sumv+v(ijk)*sq
@@ -518,7 +530,7 @@ c  (i-1,j,k) - 2
    80 ijk=ijkb-nq
       if (i.eq.1) go to 90
       if (ijk.le.0) go to 90
-      if (capn(ijk).eq.0.) go to 90
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 90
       sq=sxl*syz*sz0
       sumu=sumu+u(ijk)*sq
       sumv=sumv+v(ijk)*sq
@@ -528,7 +540,7 @@ c  (i-1,j,k) - 2
 c  (i+1,j,k) - 3
    90 ijk=ijkb+nq
       if (i.eq.ibar) go to 100
-      if (capn(ijk).eq.0.) go to 100
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 100
       sq=sxr*syz*sz0
       sumu=sumu+u(ijk)*sq
       sumv=sumv+v(ijk)*sq
@@ -539,7 +551,7 @@ c  (i,j,k-1)
  100   ijk=ijkb-nqijb
       if (k.eq.1) go to 110
       if (ijk.le.0) go to 110
-      if (capn(ijk).eq.0.) go to 110
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 110
       sq=sx0*syz*szl
       sumu=sumu+u(ijk)*sq
       sumv=sumv+v(ijk)*sq
@@ -549,7 +561,7 @@ c  (i,j,k-1)
 c  (i,j,k+1)
   110 ijk=ijkb+nqijb
       if (k.eq.kbar) go to 120
-      if (capn(ijk).eq.0.) go to 120
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 120
       sq=sx0*syz*szr
       sumu=sumu+u(ijk)*sq
       sumv=sumv+v(ijk)*sq
@@ -563,7 +575,7 @@ c  (i-1,j,k-1)
       if (k.eq.1) go to 130
       if (ijk.le.0) write (*,*) 'PROBLEM in WTNWT',i,j,k,ijk,ijkb
       if (ijk.le.0) go to 130
-      if (capn(ijk).eq.0.) go to 130
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 130
       sq=sxl*syz*szl
       sumu=sumu+u(ijk)*sq
       sumv=sumv+v(ijk)*sq
@@ -574,7 +586,7 @@ c  (i+1,j,k+1)
   130 ijk=ijkb+nq+nqijb
       if (i.eq.ibar) go to 150
       if (k.eq.kbar) go to 140
-      if (capn(ijk).eq.0.) go to 140
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 140
       sq=sxr*syz*szr
       sumu=sumu+u(ijk)*sq
       sumv=sumv+v(ijk)*sq
@@ -586,7 +598,7 @@ c  (i+1,j,k-1)
       if (i.eq.ibar) go to 150
       if (ijk.le.0) go to 150
       if (k.eq.1) go to 150
-      if (capn(ijk).eq.0.) go to 150
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 150
       sq=sxr*syz*szl
       sumu=sumu+u(ijk)*sq
       sumv=sumv+v(ijk)*sq
@@ -597,7 +609,7 @@ c  (i-1,j,k+1)
   150 ijk=ijkb-nq+nqijb
       if (i.eq.1) go to 160
       if (k.eq.kbar) go to 160
-      if (capn(ijk).eq.0.) go to 160
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 160
       sq=sxl*syz*szr
       sumu=sumu+u(ijk)*sq
       sumv=sumv+v(ijk)*sq
@@ -1106,24 +1118,30 @@ c     Feb 2005 - changed to read input from fort.100
       character*256 hline1, hline2, hline3, hline4, hline5, hline6,
      1 hline7, hline8
       character*512 inhydro_vals
-      integer ios_hdr, ipos, ieq, ieq2, ios_eta_t0
+      integer ios_hdr, ipos, ieq, ieq2, ios_eta_t0, ios_t0max,
+     1 ios_init_mode
+      integer is_smash_init
       logical hash_header, have_smash_ic, have_smash_particles,
      1 have_smash_particles_uc,
      2 have_smash_particles_oscar,
-     1 use_smash_module
+     1 use_smash_module, have_gesrm_fort100, have_input_parent
       type(smash_ic_options) smash_opts
       type(fluidization_options) fluid_opts
-      integer ierr_smash, n_loaded_smash, n_particles_smash
-      real*8 x0hydro, y0hydro, z0hydro, eta_t0_cut_hydro
-      character*256 smash_particle_file
+      integer ierr_smash, n_loaded_smash, n_particles_smash,
+     1 init_source_mode_hydro
+      real*8 x0hydro, y0hydro, z0hydro, eta_t0_cut_hydro,
+     1 auto_target_t_max_hydro
+      character*256 smash_particle_file, input_dir_hydro, path_probe
       dimension nypt(700)
       equivalence (aa1(1),u), (aa1(2),v), (aa1(3),w), (aa2(1),capn),
      1 (aa2(2),p), (aa2(3),e), (aa3(1),xmom), (aa3(2),ymom), (aa3(3)
      2 ,zmom)
       equivalence (aa4(1),px), (aa4(2),py), (aa4(3),pz)
+      common /initmode/ is_smash_init
 c     
       if (nredux.eq.0) nredux=1
 c     nredux=1
+      is_smash_init=0
       econg=.001*econ
       nreduy=nredux !nreduy=1
       nreduz=nredux ! nreduz=1
@@ -1137,6 +1155,19 @@ c     nredux=1
       if (ios_eta_t0.eq.0) read (inhydro_vals,*,iostat=ios_eta_t0)
      1 eta_t0_cut_hydro
       if (ios_eta_t0.ne.0) eta_t0_cut_hydro=-1.0d0
+      auto_target_t_max_hydro=3.0d0
+      call read_inhydro_values(155,inhydro_vals,ios_t0max)
+      if (ios_t0max.eq.0) then
+      read (inhydro_vals,*,iostat=ios_t0max) auto_target_t_max_hydro
+      if (ios_t0max.ne.0) auto_target_t_max_hydro=3.0d0
+      endif
+      if (auto_target_t_max_hydro.le.0.0d0) auto_target_t_max_hydro=3.0d0
+      init_source_mode_hydro=-1
+      call read_inhydro_values(155,inhydro_vals,ios_init_mode)
+      if (ios_init_mode.eq.0) then
+      read (inhydro_vals,*,iostat=ios_init_mode) init_source_mode_hydro
+      if (ios_init_mode.ne.0) init_source_mode_hydro=-1
+      endif
       if (npart.le.0) stop 99
       nparp=npart ! nparp=3
       nparpz=npartz ! nparpz=3
@@ -1177,18 +1208,60 @@ c       write (156,1190)
 c       write (156,1080) npart,npartz,nparp,nparpz
 c       write (156,1190)
       if (nparpz.ne.npartz) nparpz=npartz
-      inquire(file='../input/smash_ic.dat',exist=have_smash_ic)
-      inquire(file='../input/smash_particles.dat',exist=have_smash_particles)
-      inquire(file='../input/SMASH_IC.dat',exist=have_smash_particles_uc)
-      inquire(file='../input/SMASH_IC.oscar',exist=have_smash_particles_oscar)
+      input_dir_hydro='../input/'
+      inquire(file='../input/inhydro',exist=have_input_parent)
+      if (.not.have_input_parent) input_dir_hydro='input/'
+      path_probe=input_dir_hydro(1:mylenc(input_dir_hydro))//'smash_ic.dat'
+      inquire(file=path_probe(1:mylenc(path_probe)),exist=have_smash_ic)
+      path_probe=input_dir_hydro(1:mylenc(input_dir_hydro))//
+     1 'smash_particles.dat'
+      inquire(file=path_probe(1:mylenc(path_probe)),
+     1 exist=have_smash_particles)
+      path_probe=input_dir_hydro(1:mylenc(input_dir_hydro))//'SMASH_IC.dat'
+      inquire(file=path_probe(1:mylenc(path_probe)),
+     1 exist=have_smash_particles_uc)
+      path_probe=input_dir_hydro(1:mylenc(input_dir_hydro))//
+     1 'SMASH_IC.oscar'
+      inquire(file=path_probe(1:mylenc(path_probe)),
+     1 exist=have_smash_particles_oscar)
+      path_probe=input_dir_hydro(1:mylenc(input_dir_hydro))//'fort.100'
+      inquire(file=path_probe(1:mylenc(path_probe)),exist=have_gesrm_fort100)
       use_smash_module=have_smash_ic.or.have_smash_particles.or.
      1 have_smash_particles_uc.or.have_smash_particles_oscar
+      if (init_source_mode_hydro.eq.1) then
       if (.not.use_smash_module) then
-      open(unit=100,file='../input/fort.100')
+      write(*,*) 'Error: inhydro init_source_mode=1 (SMASH) but no SMASH'
+      write(*,*) 'input found (expected one of smash_ic.dat,'
+      write(*,*) 'smash_particles.dat, SMASH_IC.dat, SMASH_IC.oscar).'
+      stop 9096
+      endif
+      use_smash_module=.true.
+      write(*,*) 'Initial-state source forced by inhydro: SMASH'
+      else if (init_source_mode_hydro.eq.0) then
+      use_smash_module=.false.
+      if (.not.have_gesrm_fort100) then
+      write(*,*) 'Error: inhydro init_source_mode=0 (GESRM) but'
+      write(*,*) trim(input_dir_hydro)//'fort.100 was not found.'
+      stop 9097
+      endif
+      write(*,*) 'Initial-state source forced by inhydro: GESRM'
+      else if (init_source_mode_hydro.eq.-1) then
+      write(*,*) 'Initial-state source mode: auto-detect'
+      else
+      write(*,*) 'Error: invalid init_source_mode in inhydro: ',
+     1 init_source_mode_hydro
+      write(*,*) 'Allowed values are -1 (auto), 0 (GESRM), 1 (SMASH).'
+      stop 9095
+      endif
+      is_smash_init=0
+      if (use_smash_module) is_smash_init=1
+      if (.not.use_smash_module) then
+      path_probe=input_dir_hydro(1:mylenc(input_dir_hydro))//'fort.100'
+      open(unit=100,file=path_probe(1:mylenc(path_probe)))
       rewind 100
       read (100,'(A)',iostat=ios_hdr) hline1
       if (ios_hdr.ne.0) then
-      write(*,*) 'Error reading header from ../input/fort.100'
+      write(*,*) 'Error reading header from ',path_probe(1:mylenc(path_probe))
       stop 9011
       endif
       ipos=1
@@ -1423,19 +1496,23 @@ c        Instead of ESRM calc. we have now
       if (use_smash_module) then
       if (have_smash_particles.or.have_smash_particles_uc.or.
      1 have_smash_particles_oscar) then
-      smash_particle_file='../input/smash_particles.dat'
+      smash_particle_file=input_dir_hydro(1:mylenc(input_dir_hydro))//
+     1 'smash_particles.dat'
       if (have_smash_particles_oscar)
-     1 smash_particle_file='../input/SMASH_IC.oscar'
-      if (have_smash_particles_uc) smash_particle_file='../input/SMASH_IC.dat'
+     1 smash_particle_file=input_dir_hydro(1:mylenc(input_dir_hydro))//
+     2 'SMASH_IC.oscar'
+      if (have_smash_particles_uc)
+     1 smash_particle_file=input_dir_hydro(1:mylenc(input_dir_hydro))//
+     2 'SMASH_IC.dat'
       fluid_opts%particle_file=smash_particle_file
       fluid_opts%has_header=.true.
       fluid_opts%input_milne_tau_eta=.true.
       fluid_opts%propagate_to_target_t=.true.
-      fluid_opts%drop_if_t_above_target=.true.
+      fluid_opts%drop_if_t_above_target=.false.
       fluid_opts%filter_oscar_spectators=.true.
       fluid_opts%clamp_auto_target_t=.true.
       fluid_opts%auto_target_t_min=0.05d0
-      fluid_opts%auto_target_t_max=3.0d0
+      fluid_opts%auto_target_t_max=auto_target_t_max_hydro
       fluid_opts%stop_if_large_time_drop=.false.
       fluid_opts%max_time_drop_fraction=0.05d0
       fluid_opts%spectator_abs_rapidity_cut=1.5d0
@@ -1443,6 +1520,8 @@ c        Instead of ESRM calc. we have now
       fluid_opts%eta_t0_cut=eta_t0_cut_hydro
       fluid_opts%input_momentum_in_gev=.true.
       fluid_opts%input_energy_in_gev=.true.
+      fluid_opts%min_nb=-1.0d30
+      fluid_opts%min_e=0.0d0
       fluid_opts%use_gaussian_kernel=.true.
       fluid_opts%sigma_x=dx
       fluid_opts%sigma_y=dy
@@ -1460,11 +1539,12 @@ c        Instead of ESRM calc. we have now
       endif
       write(*,*) 'SMASH particles fluidized: ',n_particles_smash
       else
-      smash_opts%filename='../input/smash_ic.dat'
+      smash_opts%filename=input_dir_hydro(1:mylenc(input_dir_hydro))//
+     1 'smash_ic.dat'
       smash_opts%has_header=.true.
       smash_opts%convert_gev_to_mev=.true.
       smash_opts%clamp_superluminal=.true.
-      smash_opts%min_nb=0.0d0
+      smash_opts%min_nb=-1.0d30
       smash_opts%min_e=0.0d0
       call read_smash_ic(smash_opts,ibar,jbar,kbar,nq,ijbar,dxdydz,e,p,
      1 pressure,u,v,w,xmom,ymom,zmom,n_loaded_smash,ierr_smash)
@@ -1653,6 +1733,11 @@ c      1 ,k1max,kwidth
       kadjst=kmid-k1mid
 c       write (156,1280) iadjst,jadjst,kadjst
 c       write (156,1190)
+      if (use_smash_module) then
+      iadjst=0
+      jadjst=0
+      kadjst=0
+      else
       write(*,*) k1min,k1max, k1mid,kmin,kmax,kmid,kadjst,kwidth/2,jbar
       if (k1mid+kadjst+kwidth/2+2.ge.k1min) go to 920
 c     I am not sure that xmom(ijk), ymom(ijk) will have any effect
@@ -1688,8 +1773,10 @@ c     SHITTING INITIAL STATE GRID TO COINCIDE WITH THE CENTER OF THE HYDRO GRID
       zmom(ijk)=zmom(ijk1) ! in MeV/fm3
       xmom(ijk)=xmom(ijk1) ! in MeV/fm3
       ymom(ijk)=ymom(ijk1) ! in MeV/fm3
-      if (xmom(ijk).ne.0.) write (*,*) 'xmom',i,j,k,xmom(ijk)
-      if (ymom(ijk).ne.0.) write (*,*) 'ymom',i,j,k,ymom(ijk)
+      if (kdebug.gt.0.and.xmom(ijk).ne.0.)
+     1 write (*,*) 'xmom',i,j,k,xmom(ijk)
+      if (kdebug.gt.0.and.ymom(ijk).ne.0.)
+     1 write (*,*) 'ymom',i,j,k,ymom(ijk)
       p(ijk1)=0.
       e(ijk1)=0.
       zmom(ijk1)=0.
@@ -1699,6 +1786,7 @@ c     SHITTING INITIAL STATE GRID TO COINCIDE WITH THE CENTER OF THE HYDRO GRID
   140 continue
   150 continue
   160 continue
+      endif
 
 
       cmax=0.
@@ -1731,9 +1819,10 @@ c     SHITTING INITIAL STATE GRID TO COINCIDE WITH THE CENTER OF THE HYDRO GRID
       do 180 i2=i2min,i2max
       do 170 k2=k2min,k2max
       ijk=nq*(ijbar*(k2-1)+ibar*(j2-1)+i2-1)+1
-      if (p(ijk).eq.0..and.e(ijk).ne.0.) write (*,1300) i2,j2,k2,p(ijk)
+      if (is_smash_init.eq.0.and.p(ijk).eq.0..and.e(ijk).ne.0.)
+     1 write (*,1300) i2,j2,k2,p(ijk)
      1 ,e(ijk)
-      if (p(ijk).eq.0.) go to 170
+      if (p(ijk).eq.0..and.e(ijk).le.0.) go to 170
   170 continue
   180 continue
   190 continue
@@ -1789,7 +1878,7 @@ c       write (156,1190)
       do 260 k=1,kbar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
       if (ijk.gt.ijkmax) stop 21
-      if (p(ijk).eq.0.) go to 260
+      if (p(ijk).eq.0..and.e(ijk).le.0.) go to 260
       if (cmax.lt.p(ijk)) cmax=p(ijk)
       if (cmin.gt.p(ijk)) cmin=p(ijk)
       asum=asum+p(ijk) ! baryon density
@@ -1815,7 +1904,7 @@ c       write (156,1190)
       do 290 k=1,kbar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
       if (ijk.gt.ijkmax) go to 290
-      if (p(ijk).eq.0.) go to 290
+      if (p(ijk).eq.0..and.e(ijk).le.0.) go to 290
       if (i9min.gt.i) i9min=i
       if (i9max.lt.i) i9max=i
       if (j9min.gt.j) j9min=j
@@ -1906,7 +1995,7 @@ c
       do 530 k=1,kbar2
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
       if (ijk.gt.ijkmax) go to 910
-      if (p(ijk).eq.0.) go to 530
+      if (p(ijk).eq.0..and.e(ijk).le.0.) go to 530
       egsum=egsum+e(ijk)*dxdydz ! sum(T00)*V in MeV
       agsum=agsum+p(ijk)*dxdydz ! sum(N0)*V
       if (ijk.lt.0) write (105,1350) i,j,k,p(ijk),e(ijk)/1000. 
@@ -2112,7 +2201,7 @@ c
       do 630 k=1,kbar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
       if (ijk.gt.ijkmax) go to 630
-      if (capn(ijk).eq.0.) go to 630
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 630
       kcell=kcell+1
       asumer=asumer+capn(ijk)-p(ijk)
       gamm=1./sqrt(1.-w(ijk)**2) 
@@ -2211,8 +2300,10 @@ c       write (156,1190)
       do 870 j=1,jbar
       do 860 k=1,kbar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (xmom(ijk).ne.0.) write (*,*) 'xmom',i,j,k,xmom(ijk)
-      if (ymom(ijk).ne.0.) write (*,*) 'ymom',i,j,k,ymom(ijk)
+      if (kdebug.gt.0.and.xmom(ijk).ne.0.)
+     1 write (*,*) 'xmom',i,j,k,xmom(ijk)
+      if (kdebug.gt.0.and.ymom(ijk).ne.0.)
+     1 write (*,*) 'ymom',i,j,k,ymom(ijk)
   860 continue
   870 continue
   880 continue
@@ -2845,7 +2936,7 @@ c       write (156,110) numxpl,numxmn,numypl,numymn,numzpl,numzmn
       do 30 j=1,jbar
       do 20 k=1,kbar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 20
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 20
       avept=avept+xmom(ijk)**2+ymom(ijk)**2
       avepz=avepz+zmom(ijk)**2
       numclz=numclz+1
@@ -2905,6 +2996,7 @@ c
       INTEGER :: Nambi, Ndisc,Nsurf
       INTEGER :: NCornCallCycle, NCornSurfCycle, NCornSkipCycle
       INTEGER :: NCornInvalidCycle
+      INTEGER :: NNegEmidCycle
       INTEGER :: IProgLen, IProgFill, ip, ITermCols
       INTEGER :: iEmax, jEmax, kEmax, iPmax, jPmax, kPmax
       INTEGER :: IAdaptiveFO, NInactiveFO, NInactiveReq, NMinFOCheck
@@ -2912,6 +3004,7 @@ c
       LOGICAL :: has_cross_pre, has_cross_post, cube_valid
       REAL*8 ProgFrac, ProgPerc, maxEcyc, maxPcyc
       REAL*8 EPSFOE, EPSFOB
+      REAL*8 EmidMostNeg
       CHARACTER*122 ProgBar
       CHARACTER*5 EscGreen
       CHARACTER*4 EscReset
@@ -3491,7 +3584,7 @@ c       write (156,870)
       do 210 j=1,jbar
       do 200 i=1,ibar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 200
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 200
       coverp=capn(ijk)/pnu(1)
       cntot=cntot+capn(ijk) ! baryon density in fm-3
       etot=etot+e(ijk) ! energy density in MeV/fm3
@@ -3545,10 +3638,12 @@ c  write to files the initial particle positions
       ijk=nq*(ijbar*(kx-1)+ibar*(jx-1)+ix-1)+1
 c       if (capn(ijk).eq.0.) write (156,970) ko,ix,jx,kx,px(ko),py(ko),
 c      1 pz(ko),ijk,ibar,ijbar,ko,kp,kp-ko
-      if (capn(ijk).eq.0.) write (*,970) ko,ix,jx,kx,px(ko),py(ko),pz(ko
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) write (*,970) ko,ix,jx,kx,
+     1 px(ko),py(ko),pz(ko
      1 ),ijk,ibar,ijbar
-      if (capn(ijk).eq.0.) write (*,*) 'CAPN = 0 in picrel  '
-      if (capn(ijk).eq.0.) stop 1186
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) write (*,*)
+     1 'CAPN = 0 in picrel  '
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) stop 1186
       if (yte.gt.ymax) ymax=yte
       go to 250
   260 continue
@@ -3576,7 +3671,7 @@ c       if (ijk.gt.lcmb) write (156,*) 'PICREL: ijk too large',i,j,k,ijbar
 c      1 ,ibar,ijk,ijkmax,lcmb
       if (ijk.gt.lcmb) stop 1222
       u(ijk)=0.
-      if (capn(ijk).eq.0.) go to 300
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 300
 c       if (kdebug.gt.0) write (156,1150) i,j,k,ijk,capn(ijk),e(ijk),
 c      1 p(ijk),u(ijk),v(ijk),w(ijk),xmom(ijk),ymom(ijk),zmom(ijk)
       scapn=scapn+capn(ijk)
@@ -3836,7 +3931,7 @@ c
       do 470 j=1,jbar
       do 460 i=1,ibar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 460
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 460
       angx=-dfloat(j)*zmom(ijk)+dfloat(k-kmid)*xmom(ijk)+angx
       angy=dfloat(i-imid)*zmom(ijk)-dfloat(k-kmid)*xmom(ijk)+angy
       angz=-dfloat(j)*xmom(ijk)+(dfloat(i-imid)-.5)*ymom(ijk)+angz
@@ -4022,7 +4117,7 @@ c   End of calculation; write quantities needed for restart
       do 550 j=1,jbar
       do 540 k=1,kbar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 540
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 540
       sme=sme+e(ijk)*dxdydz
   540 continue
   550 continue
@@ -4037,7 +4132,7 @@ c   End of calculation; write quantities needed for restart
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
 c       if (capn(ijk).lt.0.2) capn(ijk)=0.2
 c       if (e(ijk).lt.13.0) e(ijk)=13.0
-      if (capn(ijk).eq.0.) go to 580
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 580
       capn(ijk)=capn(ijk)
       e(ijk)=e(ijk)
       p(ijk)=p(ijk)
@@ -4238,7 +4333,7 @@ c       write (156,*) 'Content for j=',jv
       iwc=0
       do 640 kv=1,kbar
       ijk=nq*(ijbar*(kv-1)+ibar*(jv-1)+iv-1)+1
-      if (capn(ijk).eq.0.) go to 640
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 640
       iwc=iwc+1
       if (iwc.gt.19) write (*,*) kv,iwc,ijk
       icnt(iwc)=kv
@@ -4483,6 +4578,8 @@ c
       NCornSurfCycle = 0
       NCornSkipCycle = 0
       NCornInvalidCycle = 0
+      NNegEmidCycle = 0
+      EmidMostNeg = 0.d0
       
       
       do i=1,ibar
@@ -4639,8 +4736,12 @@ c      endif
       Vzmid      = Quadrilinear(Vmid(:,ii),Hypervz,dt,dx,dy,dz)
       tempmid    = Quadrilinear(Vmid(:,ii),Hypertemp,dt,dx,dy,dz)
       mubmid     = Quadrilinear(Vmid(:,ii),Hypermub,dt,dx,dy,dz)
-      if (emid .lt. 0.) stop
-      if (barcharmid .lt. 0.) stop
+      if (emid .lt. 0.d0) then
+      NNegEmidCycle=NNegEmidCycle+1
+      if (emid.lt.EmidMostNeg) EmidMostNeg=emid
+      emid=0.d0
+      endif
+c     net-baryon interpolation may become locally negative in 3D runs
 
       vsquare = Vxmid**2 + Vymid**2 + Vzmid**2
 
@@ -4732,6 +4833,10 @@ c     :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       write(*,*) 'FO flux accum=',ncyc,' (P0,Px,Py,Pz,B)=',
      1 totenercornelius,totpxcornelius,totpycornelius,totpzcornelius,
      2 totbarcornelius
+      if (NNegEmidCycle.gt.0) then
+      write(*,*) 'WARNING FO interp: negative emid clamped in cyc=',
+     1 ncyc,' count=',NNegEmidCycle,' min=',EmidMostNeg
+      endif
 
 
       write (734,*) ncyc*dtconv,rnegene,posene,enetot,
@@ -5557,10 +5662,13 @@ c     References:
      &	     e_chiral_eos_small  (0:200),
      &	     n_chiral_eos_small  (0:200)
       integer inn0,iee0,j,Ne,Nes,Nn,Nns
+      integer ios51, ios52
       real*8  t,mub,e,p,n,s,mus,dummy
       real*8  e0,n0
       real*8  emin_big ,emax_big ,nmin_big ,nmax_big,
      &        emin_small,emax_small,nmin_small,nmax_small
+      character*256 eos_big_file, eos_small_file
+      logical have_eos_parent
 
       common /chiraleos/ p_chiral_eos_big    ,t_chiral_eos_big  ,
      & 			 mub_chiral_eos_big  ,s_chiral_eos_big  ,
@@ -5573,8 +5681,24 @@ c     References:
      &			 emin_big ,emax_big ,nmin_big ,nmax_big,
      &        	         emin_small,emax_small,nmin_small,nmax_small
 
-      open(unit=51,file='../eos/chiraleos.dat')
-      open(unit=52,file='../eos/chiralsmall.dat')
+      inquire(file='../eos/chiraleos.dat',exist=have_eos_parent)
+      if (have_eos_parent) then
+      eos_big_file='../eos/chiraleos.dat'
+      eos_small_file='../eos/chiralsmall.dat'
+      else
+      eos_big_file='eos/chiraleos.dat'
+      eos_small_file='eos/chiralsmall.dat'
+      endif
+      open(unit=51,file=eos_big_file,status='old',iostat=ios51)
+      if (ios51.ne.0) then
+      write(*,*) 'ERROR: Cannot open EoS file ',eos_big_file
+      stop 5641
+      endif
+      open(unit=52,file=eos_small_file,status='old',iostat=ios52)
+      if (ios52.ne.0) then
+      write(*,*) 'ERROR: Cannot open EoS file ',eos_small_file
+      stop 5642
+      endif
 
       n0 = 0.15d0 ! fm-3
       e0 = 146d0 ! MeV/fm3
@@ -5954,7 +6078,7 @@ c     1 sumpress*dxdydz,sumwijk
       j=lblvol(i)
 c  New
       if (j.le.0) go to 110
-      if (capn(j).eq.0.) go to 110
+      if (capn(j).eq.0..and.e(j).le.0.) go to 110
 c  Ensure velocities are non-zero if momenta are not
       if (w(j).ne.0..or.u(j).ne.0..or.v(j).ne.0.) go to 110
       if(e(j).eq.0.)stop 5135
@@ -6018,7 +6142,7 @@ c
       if (ijk0.gt.ijkmax) write (*,650) i,j,k,ijk0,ijkmax
       if (ijk.gt.3*ijkmax) write (*,*) i,j,k,ijk,ijkmax
       koost(ijk0)=0
-      if (capn(ijk).eq.0.) go to 150
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 150
       if (k.ne.kmid) go to 140
       if (largi(j).gt.i) go to 140
       largi(j)=i
@@ -6045,7 +6169,7 @@ c       if (kdebug.gt.0) write (156,*) ' largi',(largi(j),j=1,25)
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
       ijk0=(ijbar*(k-1)+ibar*(j-1)+i-1)+1
       kextrn(ijk0)=0
-      if (capn(ijk).eq.0.) go to 180
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 180
       numtot=numtot+1
 c      at this point capn (the density) assumes the value
 c       of 1.0000 for normal nuclear density
@@ -6125,7 +6249,7 @@ c         if (kslab.lt.4) write (156,850) totn,keqost,ibar,jbar,kbar
       do 360 j=1,jbar
       do 350 i=1,ibar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 350
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 350
       sume=sume+e(ijk) ! sumT00 [MeV*fm-3]
       a=capn(ijk)*ren0 ! N0 [fm-3], ren0=1
       b=e(ijk)*rem0n0 ! rem0n0=1, e is T00 [MeV*fm-3]
@@ -6158,7 +6282,7 @@ c
       dellz=1.
       iversn=0
       if (iversn.eq.0) go to 250
-      if (capn(ipjk).eq.0..and.capn(imjk).eq.0.) go to 220
+      if (capn(ipjk).eq.0..and.capn(imjk).eq.0..and.e(imjk).le.0.) go to 220
       if (capn(ipjk).ne.0..and.capn(imjk).ne.0.) go to 220
       if (capn(ipjk).ne.0.) go to 210
       call counms (i,j,k,nm0,nm1,0)
@@ -6172,7 +6296,7 @@ c
       if (dellx.gt.1.) dellx=1.
 c   at this point, know i-1 and i+1 are occupied, or both unoccupied
   220 continue
-      if (capn(ijkp).eq.0..and.capn(ijkm).eq.0.) go to 240
+      if (capn(ijkp).eq.0..and.capn(ijkm).eq.0..and.e(ijkm).le.0.) go to 240
       if (capn(ijkp).ne.0..and.capn(ijkm).ne.0.) go to 240
       if (capn(ijkp).ne.0.) go to 230
       call counms (i,j,k,nm0,nm1,-1)
@@ -7132,7 +7256,7 @@ c       if (kstrz.ne.0) write (156,*) ' kstrz',kstrz,' iphs3',iphs3
       do 400 j=1,jbar
       do 390 i=1,ibar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 390
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 390
       ijk0=(ijbar*(k-1)+ibar*(j-1)+i-1)+1
       call koccupy (i,j,k,iow,io6w,jdim1)
       if (iphs3.eq.1.and.iow.eq.0) go to 390
@@ -7223,7 +7347,7 @@ c   ______________________________
       do 570 i=1,ibar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
       ijk0=(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 570
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 570
       kext=kextrn(ijk0)
       if (kext.eq.0) go to 570
       kmmm=kmmm+1
@@ -8332,7 +8456,7 @@ c
       do 50 j=1,jbar
       do 40 k=1,kbar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 40
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 40
       ijk0=(ijbar*(k-1)+ibar*(j-1)+i-1)+1
       numcel=numcel+1
       sume=sume+e(ijk)
@@ -8363,7 +8487,7 @@ c
       do 110 j=1,jbar
       do 100 k=1,kbar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 100
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 100
       b=e(ijk)*rem0n0 ! [MeV*fm-3] rem0n0=1
       cmom=xmom(ijk)**2+ymom(ijk)**2+zmom(ijk)**2 ! [Mev2*fm-6]
       c=cmom*remnsq ! remnsq=1
@@ -8384,7 +8508,8 @@ c   Perform checks
       if (kslab.eq.4.or.kslab.eq.5.or.kslab.eq.7) kb=kb-2
 c  check symmetry
       ijkb=nq*(ijbar*(kb-1)+ibar*(j-1)+ib-1)+1
-      if (capn(ijk).eq.0..and.capn(ijkb).eq.0.) go to 140
+      if (capn(ijk).eq.0..and.e(ijk).le.0..and.capn(ijkb).eq.0.
+     1 .and.e(ijkb).le.0.) go to 140
 c
 c       if (dabs(capn(ijk)-capn(ijkb)).gt.1.e-8) write (156,510) i,j,k,ib,
 c      1 kb,ijk,ijkb,capn(ijk),capn(ijkb),ibar,jbar,kbar
@@ -8488,13 +8613,13 @@ c      1 ,w(ijkb),capn(ijk),capn(ijkb),ijk,ijkb,abs(w(ijk)-w(ijkb))
       i=imid
       do 190 k=1,kbar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 190
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 190
   190 continue
       j=1
       k=kmid
       do 200 i=1,ibar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 200
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 200
   200 continue
   210 continue
 c
@@ -8507,7 +8632,7 @@ c
       do 410 j=1,jbar
       do 400 i=1,ibar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 400
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 400
       if (capn(ijk).lt.0.00001) then
 c         if (e(ijk).gt.0.01) write (156,*) ' ENERGY
 c      1  ERR, n=0 ',i,j,k,ijk,capn(ijk),e(ijk)
@@ -8576,7 +8701,7 @@ c  koost determines if a cell is coasting
       if (ncb.eq.1) adjflx=1./dsqrt(u(ipjk)**2+v(ipjk)**2+w(ipjk)**2+.00
      1 001)
       uip=.5*(uijk+u(ipjk)*adjflx)
-      if (capn(ipjk).eq.0.) go to 230
+      if (capn(ipjk).eq.0..and.e(ipjk).le.0.) go to 230
       pip=.5*(p(ijk)+p(ipjk))
       go to 230
   220 uip=uijk
@@ -8587,7 +8712,7 @@ c  koost determines if a cell is coasting
       if (ncb.eq.1) adjflx=1./dsqrt(u(imjk)**2+v(imjk)**2+w(imjk)**2+.00
      1 01)
       uim=.5*(uijk+u(imjk)*adjflx)
-      if (capn(imjk).eq.0.) go to 250
+      if (capn(imjk).eq.0..and.e(imjk).le.0.) go to 250
 c???
       pim=.5*(p(ijk)+p(imjk))
       go to 250
@@ -8599,7 +8724,7 @@ c???
       if (ncb.eq.1) adjflx=1./dsqrt(u(ijpk)**2+v(ijpk)**2+w(ijpk)**2+.00
      1 01)
       vjp=.5*(vijk+v(ijpk)*adjflx)
-      if (capn(ijpk).eq.0.) go to 270
+      if (capn(ijpk).eq.0..and.e(ijpk).le.0.) go to 270
       pjp=.5*(p(ijk)+p(ijpk))
       go to 270
   260 vjp=vijk
@@ -8610,7 +8735,7 @@ c???
       if (ncb.eq.1) adjflx=1./dsqrt(u(ijmk)**2+v(ijmk)**2+w(ijmk)**2+.00
      1 01)
       vjm=.5*(vijk+v(ijmk)*adjflx)
-      if (capn(ijmk).eq.0.) go to 290
+      if (capn(ijmk).eq.0..and.e(ijmk).le.0.) go to 290
       pjm=.5*(p(ijk)+p(ijmk))
       go to 290
   280 vjm=0.
@@ -8621,7 +8746,7 @@ c???
       if (ncb.eq.1) adjflx=1./dsqrt(u(ijkp)**2+v(ijkp)**2+w(ijkp)**2+.00
      1 01)
       wkp=.5*(wijk+w(ijkp)*adjflx)
-      if (capn(ijkp).eq.0.) go to 310
+      if (capn(ijkp).eq.0..and.e(ijkp).le.0.) go to 310
       pkp=.5*(p(ijk)+p(ijkp))
 c      qkp=q0*dz*sound*capn(ijk)*(wijk-w(ijkp))
 c      if (qkp.lt.0.) qkp=0.
@@ -8635,7 +8760,7 @@ c      if (qkp.lt.0.) qkp=0.
      1 01)
       wkm=.5*(wijk+w(ijkm)*adjflx)
 c
-      if (capn(ijkm).eq.0.) go to 330
+      if (capn(ijkm).eq.0..and.e(ijkm).le.0.) go to 330
       pkm=.5*(p(ijk)+p(ijkm))
 c      qkm=q0*dz*sound*capn(ijk)*(w(ijkm)-wijk)
       go to 330
@@ -8694,7 +8819,7 @@ c--
      1 ,ymom(ijk),dtodx*pkm,dtodx*pkp,zmom(ijk)
       write (*,480) delx,dely,delz,ediff
       adjflx=1.
-      if (capn(ipjk).eq.0.) go to 340
+      if (capn(ipjk).eq.0..and.e(ipjk).le.0.) go to 340
       chkp=(xmom(ipjk)**2+ymom(ipjk)**2+zmom(ipjk)**2)
       write (*,*) 'chkp',chkp,e(ipjk)**2,chkp/e(ipjk)**2
       if (chkp.lt.e(ipjk)**2) go to 340
@@ -8703,7 +8828,7 @@ c--
   340 uip=.5*(uijk+u(ipjk)*adjflx)
       write (*,*) 'uip',uip,adjflx
       adjflm=1.
-      if (capn(imjk).eq.0.) go to 350
+      if (capn(imjk).eq.0..and.e(imjk).le.0.) go to 350
       chkm=(xmom(imjk)**2+ymom(imjk)**2+zmom(imjk)**2)
       write (*,*) 'chkm',chkm,e(imjk)**2,chkm/e(imjk)**2
       if (chkm.lt.e(imjk)**2) go to 350
@@ -8713,7 +8838,7 @@ c--
       write (*,*) 'uim',uim,adjflm
 c   z__
       adjflx=1.
-      if (capn(ijkp).eq.0.) go to 360
+      if (capn(ijkp).eq.0..and.e(ijkp).le.0.) go to 360
       chkp=(xmom(ijkp)**2+ymom(ijkp)**2+zmom(ijkp)**2)
       write (*,*) 'chkp',chkp,e(ijkp),chkp/e(ijkp)**2
       if (chkp.lt.e(ijkp)**2) go to 360
@@ -8722,7 +8847,7 @@ c   z__
   360 ukp=.5*(uijk+u(ijkp)*adjflx)
       write (*,*) 'ukp',ukp,adjflx
       adjflm=1.
-      if (capn(ijkm).eq.0.) go to 370
+      if (capn(ijkm).eq.0..and.e(ijkm).le.0.) go to 370
       chkm=(xmom(ijkm)**2+ymom(ijkm)**2+zmom(ijkm)**2)
       write (*,*) 'chkm',chkm,e(ijkm)**2,chkm/e(ijkm)**2
       if (chkm.lt.e(ijkm)**2) go to 370
@@ -8770,7 +8895,7 @@ c
       do 440 j=1,jbar
       do 430 k=1,kbar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 430
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 430
       b=e(ijk)*rem0n0 ! [MeV*fm-3]
       cmom=xmom(ijk)**2+ymom(ijk)**2+zmom(ijk)**2 ! [MeV2*fm-6]
       c=cmom*remnsq ! [MeV2*fm-6]
@@ -9108,7 +9233,7 @@ c       write (156,440)
       do 260 j=1,jbar
       do 250 k=1,kbar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 250
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 250
       cnth=capn(ijk)*rdxdydz
   250 continue
   260 continue
@@ -9759,10 +9884,10 @@ c    check lower level
 c
 c      i+1,j,k-1
       i1=ijku+nq
-      if (capn(i1).eq.0.) go to 70
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 70
 c      i-1,j,k-1
       i1=ijku-nq
-      if (capn(i1).eq.0.) go to 70
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 70
 c      i,j+1,k-1
       i1=ijku+nqib
       if (jdim1.gt.1.and.capn(i1).eq.0.) go to 70
@@ -9771,23 +9896,23 @@ c    check upper level
 c
 c      i+1,j,k+1
       i1=ijkd+nq
-      if (capn(i1).eq.0.) go to 70
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 70
 c      i-1,j,k+1
       i1=ijkd-nq
-      if (capn(i1).eq.0.) go to 70
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 70
 c      i,j+1,k+1
       if (jdim1.eq.1) go to 60
       i1=ijkd+nqib
-      if (capn(i1).eq.0.) go to 70
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 70
 c
 c    check centre level
 c
 c      i-1,j+1,k
       i1=ijp-nq
-      if (capn(i1).eq.0.) go to 70
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 70
 c      i+1,j+1,k
       i1=ijp+nq
-      if (capn(i1).eq.0.) go to 70
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 70
 c      i-1,j+1,k-1
       i1=ijkd-nq+nqib
 c    if (capn(i1).eq.0.) go to 40
@@ -9851,46 +9976,46 @@ c    check lower level
 c
 c      i+1,j,k-1
       i1=ijku+nq
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c      i-1,j,k-1
       i1=ijku-nq
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c      i,j+1,k-1
       i1=ijku+nqib
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c      i,j-1,k-1
       i1=ijku-nqib
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c
 c    check upper level
 c
 c      i+1,j,k+1
       i1=ijkd+nq
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c      i-1,j,k+1
       i1=ijkd-nq
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c      i,j+1,k+1
       i1=ijkd+nqib
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c      i,j-1,k+1
       i1=ijkd-nqib
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c
 c    check centre level
 c
 c    i-1,j-1,k
       i1=ijm-nq
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c      i+1,j-1
       i1=ijm+nq
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c      i-1,j+1,k
       i1=ijp-nq
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c      i+1,j+1,k
       i1=ijp+nq
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
       kchose=0
 c    ???
       if (kchose.eq.0) go to 150
@@ -9901,31 +10026,31 @@ c    upper level
 c
 c    i+1,j+1,k+1
       i1=ijku+nq+nqib
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c      i+1,j-1,k+1
       i1=ijku+nq-nqib
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c      i-1,j-1,k+1
       i1=ijku-nq-nqib
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c      i-1,j+1,k+1
       i1=ijku-nq+nqib
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c
 c    lower level
 c
 c    i+1,j+1,k-1
       i1=ijkd+nq+nqib
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c      i+1,j-1,k-1
       i1=ijkd+nq-nqib
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c      i-1,j-1,k-1
       i1=ijkd-nq-nqib
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
 c      i-1,j+1,k-1
       i1=ijkd-nq+nqib
-      if (capn(i1).eq.0.) go to 160
+      if (capn(i1).eq.0..and.e(i1).le.0.) go to 160
   150 continue
       io=1
 c
@@ -10308,7 +10433,7 @@ c     After calling phase1 e(ijk),zmom(ijk),ymom(ijk) and xmom(ijk) are
 c     given in MeV. capn(ijk) is multiplied by dxdydz and pressure is
 c     given in MeV/fm3 b is given in MeV*fm-3, cmom and c in MeV2*fm-6
       kext=0
-      if (capn(ijk).eq.0.) go to 690
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 690
       pijk=0.
       a=capn(ijk)   ! N0*V
       b=e(ijk) ! T00 in MeV
@@ -12610,7 +12735,8 @@ c
       ibjkb=nq*(ijbar*(kb-1)+ibar*(j-1)+ib-1)+1
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
 c
-      if (capn(ijk).eq.0..and.capn(ibjkb).eq.0.) go to 30
+      if (capn(ijk).eq.0..and.e(ijk).le.0..and.capn(ibjkb).eq.0.
+     1 .and.e(ibjkb).le.0.) go to 30
 c
       diffn=capn(ijk)-capn(ibjkb)
       diffn1=capn(ibjk)-capn(ijkb)
@@ -12656,7 +12782,8 @@ c      2  ,capn(ibjk),capn(ijkb)
         kqb=krmax-kq+klmin
         ijkq=nq*(ijbar*(kq-1)+ibar*(j-1)+i-1)+1
         ibjkbq=nq*(ijbar*(kqb-1)+ibar*(j-1)+ib-1)+1
-        if (capn(ijkq).eq.0..and.capn(ibjkbq).eq.0.) go to 20
+        if (capn(ijkq).eq.0..and.e(ijkq).le.0..and.capn(ibjkbq)
+     1   .eq.0..and.e(ibjkbq).le.0.) go to 20
         zd=zmom(ijkq)+zmom(ibjkbq)
 c         write (156,60) kq,kqb,ijkq,capn(ijkq),zmom(ijkq),ibjkbq,capn
 c      1  (ibjkbq),zmom(ibjkbq),zd
@@ -12758,7 +12885,7 @@ c       if (kdebug.ne.0) write (156,*) 'checks',kdisp
       do 20 i=1,ibar
       do 10 k=1,kbar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 10
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 10
       if (k.gt.kmax) kmax=k
       if (k.lt.kmin) kmin=k
    10 continue
@@ -12771,7 +12898,7 @@ c
       do 40 j=1,jbar
       do 30 k=1,kbar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 30
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 30
       sume=sume+e(ijk)
    30 continue
    40 continue
@@ -12787,7 +12914,8 @@ c
       if (k.gt.kb) write (*,*) ' k,kb',k,kb,ijk,ijkb,i,j
       if (ijkb.le.0) go to 60
 c
-      if (capn(ijk).eq.0..and.capn(ijkb).eq.0.) go to 60
+      if (capn(ijk).eq.0..and.e(ijk).le.0..and.capn(ijkb).eq.0.
+     1 .and.e(ijkb).le.0.) go to 60
 c       if (dabs(capn(ijk)-capn(ijkb)).gt.1.e-7) write (156,170) i,ib,j,k
 c      1 ,kb,capn(ijk),capn(ijkb),ijk,ijkb
       if (dabs(xmom(ijk)+xmom(ijkb)).gt..00001*abs(xmom(ijk))) write (
@@ -12841,7 +12969,7 @@ c      1 (ijk),p(ijkb),dabs(p(ijk)-p(ijkb)),ijk,ijkb
       aplot(i,k)=0.
       cplot(i,k)=0.
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 90
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 90
       eedns(i,k)=zmom(ijk)
       adens(i,k)=capn(ijk)
       u(ijk)=0.
@@ -12853,7 +12981,7 @@ c      1 (ijk),p(ijkb),dabs(p(ijk)-p(ijkb)),ijk,ijkb
       do 130 j=1,jbar
       do 120 k=1,kbar
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
-      if (capn(ijk).eq.0.) go to 120
+      if (capn(ijk).eq.0..and.e(ijk).le.0.) go to 120
       sume=sume+e(ijk)
   120 continue
   130 continue

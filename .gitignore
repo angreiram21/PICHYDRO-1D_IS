@@ -1,4 +1,6 @@
 *.out
+*.o
+*.mod
 *.100
 *.10
 output

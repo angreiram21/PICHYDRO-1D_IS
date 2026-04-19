@@ -159,6 +159,7 @@ Line & Col. & Variable & Meaning \\\hline
 8 & 1 & \texttt{npart} & Marker subdivision count in transverse directions per cell. \\\hline
 8 & 2 & \texttt{npartz} & Marker subdivision count in longitudinal (\texttt{z}) direction per cell. \\\hline
 9 & 1 & \texttt{eta\_t0\_cut} & Optional rapidity cut for SMASH Milne synchronization: if \texttt{>0}, use \(t_0=\tau_0\cosh(\eta_{t0,\mathrm{cut}})\). \\\hline
+10 & 1 & \texttt{init\_source\_mode} & Initial-state source selector: \texttt{1}=force SMASH, \texttt{0}=force GESRM, \texttt{-1}=auto-detect. \\\hline
 \end{longtable}
 
 For other \texttt{kslab} values, line 7 has a different schema:
@@ -178,6 +179,7 @@ jdim1 = 3
 porton_dtmod_ncycpt_ncycrp_ncycaf = .95 0.2 10 10 1
 npart_npartz = 3 3
 eta_t0_cut = 2.0
+init_source_mode = 1
 \end{verbatim}
 
 \subsection{\texttt{input/fort.100}}
@@ -268,6 +270,15 @@ t_{\mathrm{target}} = \tau_0 \cosh(\eta_{t0,\mathrm{cut}}),
 with \(\tau_0\) taken from the first column of the SMASH IC line format.
 If \texttt{eta\_t0\_cut<=0} (or absent), the fallback is the previous
 \(t_{\mathrm{target}}=\max(t_i)\) behavior.
+
+The initialization source can be selected explicitly from \texttt{inhydro}
+through \texttt{init\_source\_mode}:
+\begin{itemize}
+\item \texttt{1}: force SMASH input path (particle fluidization or
+      \texttt{smash\_ic.dat} grid path),
+\item \texttt{0}: force GESRM/legacy hydro-field path,
+\item \texttt{-1}: auto-detect based on available files.
+\end{itemize}
 
 When the SMASH file contains multiple event blocks in the same file
 (\texttt{\# event ... start/end}), the code performs fluidization

@@ -201,6 +201,7 @@ c      go to (70,50,50,160,90,100,110,120), kslab
   130 continue
   140 continue
       call read_chiral_eos
+      call read_smash_eos
       call picrel
   150 continue
 c
@@ -4589,13 +4590,14 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       sumchem=0.
       sumentro=0.
       nlpc=0.
+      erfijk=(1.-w(ijk)**2-u(ijk)**2-v(ijk)**2)*(e(ijk)+p(ijk))-p(ijk)
       if (ioptos4.ne.0.and.modcyc.eq.0) write (10,1300) ikkk,j,k,e(ijk)
      1 ,capn(ijk),p(ijk),w(ijk),u(ijk),v(ijk),zmom(ijk),ymom(ijk)
-     2 ,xmom(ijk),tq,sq,amuq
+     2 ,xmom(ijk),tq,sq,amuq,erfijk
       if (ioptos4.ne.0.and.modcyc.eq.0) then
       write (118,1300) ikkk,j,k,e(ijk)
      1 ,capn(ijk),p(ijk),w(ijk),u(ijk),v(ijk),zmom(ijk),ymom(ijk)
-     2 ,xmom(ijk),tq,sq,amuq
+     2 ,xmom(ijk),tq,sq,amuq,erfijk
       endif
       
       
@@ -4717,7 +4719,7 @@ c
  1290 format ('|',13x,'Number of cells=',i7,'  Maximum number=',i7,f6.1,
      1'%',15x,'|',/,'|',8x,' Number of particles=',i7,'  Maximum number=
      2',i7,f6.1,'%',15x,'|'/,'|',82x,'|')
- 1300 format (3i4,' ',12(E12.5,' '))
+ 1300 format (3i4,' ',13(E12.5,' '))
  1310 format ('|',5x,'Nuclear radius =',f6.3,'fm  cell: x dimension=',f6
      1 .3,'fm','  z dimen. =',f6.3'fm',5x,'|'/,'|',30x,'cell volume=',f6
      2 .3,'fm^3 ',29x,'|'/,'|',17x,'time for light to travel dz is',f7.4
@@ -5187,6 +5189,166 @@ c       n = n * n0
       return
       end
 
+c
+c     ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c
+      function temptab_smash(e,n)
+      implicit none
+      real*8 temptab_smash
+      real*8 t_smash(0:100,0:50), mub_smash(0:100,0:50),
+     &       e_smash(0:100), n_smash(0:50)
+      real*8 emin_smash, emax_smash, nmin_smash, nmax_smash
+      real*8 e,n,de,dn,em,nm,we0,we1,wn0,wn1
+      integer ie,in
+      common /smasheos/ t_smash,mub_smash,e_smash,n_smash,
+     &                  emin_smash,emax_smash,nmin_smash,nmax_smash
+
+      if (e .lt. 0.d0) then
+        temptab_smash = 0.d0
+        return
+      endif
+
+      de = (emax_smash - emin_smash) / 100.d0
+      dn = (nmax_smash - nmin_smash) / 50.d0
+      if (de .le. 0.d0 .or. dn .le. 0.d0) then
+        temptab_smash = 0.d0
+        return
+      endif
+
+      ie = int((e - emin_smash) / de)
+      in = int((n - nmin_smash) / dn)
+      if (ie .lt. 0) ie = 0
+      if (in .lt. 0) in = 0
+      if (ie .gt. 99) ie = 99
+      if (in .gt. 49) in = 49
+
+      em = e - (emin_smash + dfloat(ie)*de)
+      nm = n - (nmin_smash + dfloat(in)*dn)
+      we0 = 1.d0 - em/de
+      we1 = em/de
+      wn0 = 1.d0 - nm/dn
+      wn1 = nm/dn
+
+      if (we0 .lt. 0.d0) we0 = 0.d0
+      if (we1 .lt. 0.d0) we1 = 0.d0
+      if (wn0 .lt. 0.d0) wn0 = 0.d0
+      if (wn1 .lt. 0.d0) wn1 = 0.d0
+      if (we0 .gt. 1.d0) we0 = 1.d0
+      if (we1 .gt. 1.d0) we1 = 1.d0
+      if (wn0 .gt. 1.d0) wn0 = 1.d0
+      if (wn1 .gt. 1.d0) wn1 = 1.d0
+
+      temptab_smash = we0*wn0*t_smash(ie,in) +
+     &                we1*wn0*t_smash(ie+1,in) +
+     &                we0*wn1*t_smash(ie,in+1) +
+     &                we1*wn1*t_smash(ie+1,in+1)
+      if (temptab_smash .lt. 0.d0) temptab_smash = 0.d0
+      return
+      end
+c
+c     ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c
+      function chemtab_smash(e,n)
+      implicit none
+      real*8 chemtab_smash
+      real*8 t_smash(0:100,0:50), mub_smash(0:100,0:50),
+     &       e_smash(0:100), n_smash(0:50)
+      real*8 emin_smash, emax_smash, nmin_smash, nmax_smash
+      real*8 e,n,de,dn,em,nm,we0,we1,wn0,wn1
+      integer ie,in
+      common /smasheos/ t_smash,mub_smash,e_smash,n_smash,
+     &                  emin_smash,emax_smash,nmin_smash,nmax_smash
+
+      if (e .lt. 0.d0) then
+        chemtab_smash = 0.d0
+        return
+      endif
+
+      de = (emax_smash - emin_smash) / 100.d0
+      dn = (nmax_smash - nmin_smash) / 50.d0
+      if (de .le. 0.d0 .or. dn .le. 0.d0) then
+        chemtab_smash = 0.d0
+        return
+      endif
+
+      ie = int((e - emin_smash) / de)
+      in = int((n - nmin_smash) / dn)
+      if (ie .lt. 0) ie = 0
+      if (in .lt. 0) in = 0
+      if (ie .gt. 99) ie = 99
+      if (in .gt. 49) in = 49
+
+      em = e - (emin_smash + dfloat(ie)*de)
+      nm = n - (nmin_smash + dfloat(in)*dn)
+      we0 = 1.d0 - em/de
+      we1 = em/de
+      wn0 = 1.d0 - nm/dn
+      wn1 = nm/dn
+
+      if (we0 .lt. 0.d0) we0 = 0.d0
+      if (we1 .lt. 0.d0) we1 = 0.d0
+      if (wn0 .lt. 0.d0) wn0 = 0.d0
+      if (wn1 .lt. 0.d0) wn1 = 0.d0
+      if (we0 .gt. 1.d0) we0 = 1.d0
+      if (we1 .gt. 1.d0) we1 = 1.d0
+      if (wn0 .gt. 1.d0) wn0 = 1.d0
+      if (wn1 .gt. 1.d0) wn1 = 1.d0
+
+      chemtab_smash = we0*wn0*mub_smash(ie,in) +
+     &                we1*wn0*mub_smash(ie+1,in) +
+     &                we0*wn1*mub_smash(ie,in+1) +
+     &                we1*wn1*mub_smash(ie+1,in+1)
+      return
+      end
+c
+c     ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c
+      subroutine read_smash_eos()
+      implicit none
+      integer ie,inn,inq
+      real*8 e,nb,nq,t,p,mub,mus,muq
+      real*8 t_smash(0:100,0:50), mub_smash(0:100,0:50),
+     &       e_smash(0:100), n_smash(0:50), dsmash(0:100,0:50)
+      real*8 emin_smash, emax_smash, nmin_smash, nmax_smash
+      common /smasheos/ t_smash,mub_smash,e_smash,n_smash,
+     &                  emin_smash,emax_smash,nmin_smash,nmax_smash
+
+      do inn=0,50
+        n_smash(inn)=0.d0
+        do ie=0,100
+          t_smash(ie,inn)=0.d0
+          mub_smash(ie,inn)=0.d0
+          dsmash(ie,inn)=1.d30
+        enddo
+      enddo
+      do ie=0,100
+        e_smash(ie)=0.d0
+      enddo
+
+      open(unit=53,file='../eos/hadgas_eos_SMASH.dat')
+      read(53,*)
+      do inn=0,50
+        do ie=0,100
+          do inq=0,50
+            read(53,*) e,nb,nq,t,p,mub,mus,muq
+            if (dabs(nq).lt.dsmash(ie,inn)) then
+              dsmash(ie,inn)=dabs(nq)
+              e_smash(ie)=e*1000.d0
+              n_smash(inn)=nb
+              t_smash(ie,inn)=t*1000.d0
+              mub_smash(ie,inn)=mub*1000.d0
+            endif
+          enddo
+        enddo
+      enddo
+      close(53)
+
+      emin_smash=e_smash(0)
+      emax_smash=e_smash(100)
+      nmin_smash=n_smash(0)
+      nmax_smash=n_smash(50)
+      return
+      end
 c
 c     ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
@@ -6367,14 +6529,14 @@ c      v(ijk)=vijk
 c      w(ijk)=wijk
 c     added Angel 2024
 
-
+      erfijk=(1.-wijk**2-uijk**2-vijk**2)*(e(ijk)+pijk)-pijk
       if (ioptos4.ne.0) write (10,820)i,j,k,e(ijk),capn(ijk),
      1 pijk,wijk,uijk,vijk,zmom(ijk),ymom(ijk),xmom(ijk),tq,sq,
-     2 amuq
+     2 amuq,erfijk
       if (ioptos4.ne.0) then
        write (118,820)i,j,k,e(ijk),capn(ijk),
      1 pijk,wijk,uijk,vijk,zmom(ijk),ymom(ijk),xmom(ijk),tq,sq,
-     2 amuq
+     2 amuq,erfijk
        endif
 c       if (sqrt(1.-wijk**2-uijk**2-vijk**2)*capn(ijk).lt.0.2) then
 c       capn(ijk)=0.2/sqrt(1.-wijk**2-uijk**2-vijk**2)
@@ -6773,8 +6935,10 @@ c      3 +xmomdenslfpos(i,j-1,k-1)+xmomdenslfpos(i-1,j-1,k-1))/8.
       call eqsqcd3(az,z)
 
       presspos(i,j,k) = pq
-      temppos(i,j,k)  = tq
-      xmubpos(i,j,k)   = amuq
+      temppos(i,j,k)  = temptab_smash(enerdensrfpost(i,j,k),
+     1 bardensrfpost(i,j,k))
+      xmubpos(i,j,k)  = chemtab_smash(enerdensrfpost(i,j,k),
+     1 bardensrfpost(i,j,k))
 
 c      ---------------------------- PRE
 
@@ -6931,8 +7095,10 @@ c      3 +xmomdenslfpre(i,j-1,k-1)+xmomdenslfpre(i-1,j-1,k-1))/8.
       call eqsqcd3(az,z)
 c     añadir common
       presspre(i,j,k) = pq
-      temppre(i,j,k)  = tq
-      xmubpre(i,j,k)   = amuq
+      temppre(i,j,k)  = temptab_smash(enerdensrfprev(i,j,k),
+     1 bardensrfprev(i,j,k))
+      xmubpre(i,j,k)  = chemtab_smash(enerdensrfprev(i,j,k),
+     1 bardensrfprev(i,j,k))
 
  1350 continue
  1360 continue
@@ -7584,7 +7750,7 @@ c
      5     [c]         [c]     [MeV/fm3]    [MeV/fm3]      [MeV/fm3]
      6  [MeV]        [fm-3]      [MeV]')
 c  820 format (3i4,f10.4,f10.5,3f9.1,' ',3f8.4,f7.1,4f9.3)
-  820 format (3i4,' ',12(E12.5,' '))
+  820 format (3i4,' ',13(E12.5,' '))
   821 format (3i4,' ',6(E12.5,' '))
   830 format (3i4,2f9.4,2f9.1,3f8.1,' ',3f9.4,f7.1,f9.3,i4)
   840 format (2i4,5f12.5,3f8.1)

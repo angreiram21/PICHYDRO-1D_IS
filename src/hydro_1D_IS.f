@@ -3903,6 +3903,8 @@ C     ------------------------------------------------------------------
 C       CHECKING FOR ENERGY, MOMEMTUM AND BARYON CHARGE CONSERVATION
       sumN0=0
       sumT00=0
+      sumT0X=0
+      sumT0Y=0
       sumT0Z=0
       sumpress=0
       sumwijk=0
@@ -3912,6 +3914,8 @@ C       CHECKING FOR ENERGY, MOMEMTUM AND BARYON CHARGE CONSERVATION
       ijk=nq*(ijbar*(k-1)+ibar*(j-1)+i-1)+1
       sumN0=sumN0+capn(ijk)
       sumT00=sumT00+e(ijk)
+      sumT0X=sumT0X+xmom(ijk)
+      sumT0Y=sumT0Y+ymom(ijk)
       sumT0Z=sumT0Z+zmom(ijk)
       sumpress=sumpress+p(ijk)
       sumwijk=sumwijk+abs(w(ijk))
@@ -4249,8 +4253,8 @@ C       CHECKING FOR ENERGY, MOMEMTUM AND BARYON CHARGE CONSERVATION
 
       write(*,1002) EscGreen,ProgBar(1:IProgLen+2),EscReset,ProgPerc,
      1 ncyc,icysum
-      write(*,1003) sumT00*dxdydz,sumT0Z*dxdydz,sumpress*dxdydz,
-     1 sumN0*dxdydz
+      write(*,1003) sumT00*dxdydz,sumT0X*dxdydz,sumT0Y*dxdydz,
+     1 sumT0Z*dxdydz,sumpress*dxdydz,sumN0*dxdydz
 c     ------------------------------------------------------------------
 c
       call plane
@@ -4673,8 +4677,8 @@ c
  1000 format ('ncyc=',i3,' t=',f10.6,'  E_tot=',f24.15,' [GeV]  kp=',i7,
      1' compmx=',f9.6,'  dxdydz=',f17.14,'  rdxdydz=',4f18.14)
  1002 format ('Progress ',a,a,a,1x,f6.2,'%',2x,'(',i7,'/',i7,')')
- 1003 format ('sumT00*V=',e16.8,' sumT0Z*V=',e16.8,' sumpress*V=',
-     1 e16.8,' sumN0*V=',e16.8)
+ 1003 format ('sumT00*V=',e16.8,' sumT0X*V=',e16.8,' sumT0Y*V=',e16.8,
+     1 ' sumT0Z*V=',e16.8,' sumpress*V=',e16.8,' sumN0*V=',e16.8)
  1010 format (' Following are quantities in each cell; to convert to fm^
      1 -3, multiply by',f10.6)
  1020 format (3f21.16)

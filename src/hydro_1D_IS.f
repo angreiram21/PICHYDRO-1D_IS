@@ -32,6 +32,7 @@ c
      1 nreduy, nreduz, ioptos1, ioptos2, ioptos3, kw, kdebug, ktnc,
      2 kslab, interp, interv, npart, npartz, nparp, nparpz, krandm,
      3 kbarmx, modcyc, ioptos4
+      common /smashcfg/ use_nq_from_za, z_smash, a_smash, za_smash
       common /thestf/ rap00, Tfin, dxv, dyv, dzv, epsilon00, b0, rho00,
      1 e00
       common /gss/ sigx, sigy, sigz, radx, rady, radz, kspher
@@ -68,6 +69,10 @@ c
       totpzcornelius=0.
       totbarcornelius=0.
       nevent=-1
+      use_nq_from_za=0.d0
+      z_smash=0.d0
+      a_smash=1.d0
+      za_smash=0.d0
       kresrt=0
       do 10 i=1,80
       ibl(i)=' '
@@ -200,6 +205,7 @@ c      go to (70,50,50,160,90,100,110,120), kslab
       go to 140
   130 continue
   140 continue
+      call read_smash_fo_cfg
       call read_chiral_eos
       call read_smash_eos
       call picrel
@@ -2831,6 +2837,7 @@ c
       common /foclose/ EPSFOE, EPSFOB, IAdaptiveFO, NInactiveFO,
      1 NInactiveReq, NMinFOCheck, ICycleExtendStep, ICycleMaxHard,
      2 IClosedFO
+      common /smashcfg/ use_nq_from_za, z_smash, a_smash, za_smash
       dimension u(91627233), v(91627233), w(91627233), capn(91627233), p
      1 (91627233), e(91627233), xmom(91627233), ymom(91627233), zmom(91627233)
      
@@ -5196,112 +5203,191 @@ c       n = n * n0
 c
 c     ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
-      function temptab_smash(e,n)
+      function temptab_smash(e,n,nq)
       implicit none
+      integer NeSmash,NnSmash,NqSmash
+      parameter (NeSmash=101,NnSmash=51,NqSmash=51)
       real*8 temptab_smash
-      real*8 t_smash(0:100,0:50), mub_smash(0:100,0:50),
-     &       e_smash(0:100), n_smash(0:50)
-      real*8 emin_smash, emax_smash, nmin_smash, nmax_smash
-      real*8 e,n,de,dn,em,nm,we0,we1,wn0,wn1
-      integer ie,in
-      common /smasheos/ t_smash,mub_smash,e_smash,n_smash,
-     &                  emin_smash,emax_smash,nmin_smash,nmax_smash
+      real*8 t_smash(0:NeSmash-1,0:NnSmash-1,0:NqSmash-1),
+     &       mub_smash(0:NeSmash-1,0:NnSmash-1,0:NqSmash-1),
+     &       e_smash(0:NeSmash-1), n_smash(0:NnSmash-1),
+     &       nq_smash(0:NqSmash-1)
+      real*8 emin_smash,emax_smash,nmin_smash,nmax_smash,
+     &       nqmin_smash,nqmax_smash
+      real*8 e,n,nq,de,dn,dq,em,nm,qm,tfac
+      real*8 we(0:1),wn(0:1),wq(0:1),ttmp
+      integer ie,in,iq,je,jn,jq
+      common /smasheos/ t_smash,mub_smash,e_smash,n_smash,nq_smash,
+     &                  emin_smash,emax_smash,nmin_smash,nmax_smash,
+     &                  nqmin_smash,nqmax_smash
 
-      if (e .lt. 0.d0) then
-        temptab_smash = 0.d0
+      temptab_smash=0.d0
+      if (e.le.0.d0) return
+
+      de=(emax_smash-emin_smash)/dfloat(NeSmash-1)
+      dn=(nmax_smash-nmin_smash)/dfloat(NnSmash-1)
+      dq=(nqmax_smash-nqmin_smash)/dfloat(NqSmash-1)
+      if (de.le.0.d0.or.dn.le.0.d0.or.dq.le.0.d0) return
+
+      in=int((n-nmin_smash)/dn)
+      iq=int((nq-nqmin_smash)/dq)
+      if (in.lt.0) in=0
+      if (iq.lt.0) iq=0
+      if (in.gt.NnSmash-2) in=NnSmash-2
+      if (iq.gt.NqSmash-2) iq=NqSmash-2
+
+      nm=n-nmin_smash-dfloat(in)*dn
+      qm=nq-nqmin_smash-dfloat(iq)*dq
+      wn(0)=1.d0-nm/dn
+      wn(1)=nm/dn
+      wq(0)=1.d0-qm/dq
+      wq(1)=qm/dq
+
+      if (e.lt.emin_smash) then
+        ttmp=0.d0
+        do jn=0,1
+          do jq=0,1
+            ttmp=ttmp+wn(jn)*wq(jq)*t_smash(0,in+jn,iq+jq)
+          enddo
+        enddo
+        tfac=e/emin_smash
+        if (tfac.lt.0.d0) tfac=0.d0
+        temptab_smash=tfac*ttmp
+        if (temptab_smash.lt.0.d0) temptab_smash=0.d0
         return
       endif
 
-      de = (emax_smash - emin_smash) / 100.d0
-      dn = (nmax_smash - nmin_smash) / 50.d0
-      if (de .le. 0.d0 .or. dn .le. 0.d0) then
-        temptab_smash = 0.d0
-        return
-      endif
+      ie=int((e-emin_smash)/de)
+      if (ie.lt.0) ie=0
+      if (ie.gt.NeSmash-2) ie=NeSmash-2
 
-      ie = int((e - emin_smash) / de)
-      in = int((n - nmin_smash) / dn)
-      if (ie .lt. 0) ie = 0
-      if (in .lt. 0) in = 0
-      if (ie .gt. 99) ie = 99
-      if (in .gt. 49) in = 49
+      em=e-emin_smash-dfloat(ie)*de
+      we(0)=1.d0-em/de
+      we(1)=em/de
 
-      em = e - (emin_smash + dfloat(ie)*de)
-      nm = n - (nmin_smash + dfloat(in)*dn)
-      we0 = 1.d0 - em/de
-      we1 = em/de
-      wn0 = 1.d0 - nm/dn
-      wn1 = nm/dn
-
-      if (we0 .lt. 0.d0) we0 = 0.d0
-      if (we1 .lt. 0.d0) we1 = 0.d0
-      if (wn0 .lt. 0.d0) wn0 = 0.d0
-      if (wn1 .lt. 0.d0) wn1 = 0.d0
-      if (we0 .gt. 1.d0) we0 = 1.d0
-      if (we1 .gt. 1.d0) we1 = 1.d0
-      if (wn0 .gt. 1.d0) wn0 = 1.d0
-      if (wn1 .gt. 1.d0) wn1 = 1.d0
-
-      temptab_smash = we0*wn0*t_smash(ie,in) +
-     &                we1*wn0*t_smash(ie+1,in) +
-     &                we0*wn1*t_smash(ie,in+1) +
-     &                we1*wn1*t_smash(ie+1,in+1)
-      if (temptab_smash .lt. 0.d0) temptab_smash = 0.d0
+      temptab_smash=0.d0
+      do je=0,1
+        do jn=0,1
+          do jq=0,1
+            temptab_smash=temptab_smash+we(je)*wn(jn)*wq(jq)*
+     &                    t_smash(ie+je,in+jn,iq+jq)
+          enddo
+        enddo
+      enddo
+      if (temptab_smash.lt.0.d0) temptab_smash=0.d0
       return
       end
 c
 c     ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
-      function chemtab_smash(e,n)
+      function chemtab_smash(e,n,nq)
       implicit none
+      integer NeSmash,NnSmash,NqSmash
+      parameter (NeSmash=101,NnSmash=51,NqSmash=51)
       real*8 chemtab_smash
-      real*8 t_smash(0:100,0:50), mub_smash(0:100,0:50),
-     &       e_smash(0:100), n_smash(0:50)
-      real*8 emin_smash, emax_smash, nmin_smash, nmax_smash
-      real*8 e,n,de,dn,em,nm,we0,we1,wn0,wn1
-      integer ie,in
-      common /smasheos/ t_smash,mub_smash,e_smash,n_smash,
-     &                  emin_smash,emax_smash,nmin_smash,nmax_smash
+      real*8 t_smash(0:NeSmash-1,0:NnSmash-1,0:NqSmash-1),
+     &       mub_smash(0:NeSmash-1,0:NnSmash-1,0:NqSmash-1),
+     &       e_smash(0:NeSmash-1), n_smash(0:NnSmash-1),
+     &       nq_smash(0:NqSmash-1)
+      real*8 emin_smash,emax_smash,nmin_smash,nmax_smash,
+     &       nqmin_smash,nqmax_smash
+      real*8 e,n,nq,de,dn,dq,em,nm,qm
+      real*8 we(0:1),wn(0:1),wq(0:1)
+      integer ie,in,iq,je,jn,jq
+      common /smasheos/ t_smash,mub_smash,e_smash,n_smash,nq_smash,
+     &                  emin_smash,emax_smash,nmin_smash,nmax_smash,
+     &                  nqmin_smash,nqmax_smash
 
-      if (e .lt. 0.d0) then
-        chemtab_smash = 0.d0
+      chemtab_smash=0.d0
+      if (e.le.0.d0) return
+
+      de=(emax_smash-emin_smash)/dfloat(NeSmash-1)
+      dn=(nmax_smash-nmin_smash)/dfloat(NnSmash-1)
+      dq=(nqmax_smash-nqmin_smash)/dfloat(NqSmash-1)
+      if (de.le.0.d0.or.dn.le.0.d0.or.dq.le.0.d0) return
+
+      if (e.lt.emin_smash) then
+        chemtab_smash=0.d0
         return
       endif
 
-      de = (emax_smash - emin_smash) / 100.d0
-      dn = (nmax_smash - nmin_smash) / 50.d0
-      if (de .le. 0.d0 .or. dn .le. 0.d0) then
-        chemtab_smash = 0.d0
-        return
+      ie=int((e-emin_smash)/de)
+      in=int((n-nmin_smash)/dn)
+      iq=int((nq-nqmin_smash)/dq)
+      if (ie.lt.0) ie=0
+      if (in.lt.0) in=0
+      if (iq.lt.0) iq=0
+      if (ie.gt.NeSmash-2) ie=NeSmash-2
+      if (in.gt.NnSmash-2) in=NnSmash-2
+      if (iq.gt.NqSmash-2) iq=NqSmash-2
+
+      em=e-emin_smash-dfloat(ie)*de
+      nm=n-nmin_smash-dfloat(in)*dn
+      qm=nq-nqmin_smash-dfloat(iq)*dq
+      we(0)=1.d0-em/de
+      we(1)=em/de
+      wn(0)=1.d0-nm/dn
+      wn(1)=nm/dn
+      wq(0)=1.d0-qm/dq
+      wq(1)=qm/dq
+
+      chemtab_smash=0.d0
+      do je=0,1
+        do jn=0,1
+          do jq=0,1
+            chemtab_smash=chemtab_smash+we(je)*wn(jn)*wq(jq)*
+     &                    mub_smash(ie+je,in+jn,iq+jq)
+          enddo
+        enddo
+      enddo
+      return
+      end
+c
+c     ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c
+      subroutine read_smash_fo_cfg
+      implicit none
+      character*256 line
+      character*32 key
+      real*8 value
+      integer ios
+      real*8 use_nq_from_za,z_smash,a_smash,za_smash
+      common /smashcfg/ use_nq_from_za, z_smash, a_smash, za_smash
+
+      use_nq_from_za=0.d0
+      z_smash=0.d0
+      a_smash=1.d0
+      za_smash=0.d0
+
+      open(unit=54,file='../input/smash_fo.cfg',status='old',iostat=ios)
+      if (ios.ne.0) return
+
+   10 continue
+      read(54,'(A)',iostat=ios) line
+      if (ios.ne.0) goto 20
+      if (line.eq.' ') goto 10
+      if (line(1:1).eq.'#'.or.line(1:1).eq.'!') goto 10
+      key=' '
+      value=0.d0
+      read(line,*,iostat=ios) key,value
+      if (ios.ne.0) goto 10
+      if (key.eq.'use_nq_from_za'.or.key.eq.'USE_NQ_FROM_ZA') then
+        use_nq_from_za=value
+      else if (key.eq.'Z'.or.key.eq.'z') then
+        z_smash=value
+      else if (key.eq.'A'.or.key.eq.'a') then
+        a_smash=value
       endif
+      goto 10
 
-      ie = int((e - emin_smash) / de)
-      in = int((n - nmin_smash) / dn)
-      if (ie .lt. 0) ie = 0
-      if (in .lt. 0) in = 0
-      if (ie .gt. 99) ie = 99
-      if (in .gt. 49) in = 49
-
-      em = e - (emin_smash + dfloat(ie)*de)
-      nm = n - (nmin_smash + dfloat(in)*dn)
-      we0 = 1.d0 - em/de
-      we1 = em/de
-      wn0 = 1.d0 - nm/dn
-      wn1 = nm/dn
-
-      if (we0 .lt. 0.d0) we0 = 0.d0
-      if (we1 .lt. 0.d0) we1 = 0.d0
-      if (wn0 .lt. 0.d0) wn0 = 0.d0
-      if (wn1 .lt. 0.d0) wn1 = 0.d0
-      if (we0 .gt. 1.d0) we0 = 1.d0
-      if (we1 .gt. 1.d0) we1 = 1.d0
-      if (wn0 .gt. 1.d0) wn0 = 1.d0
-      if (wn1 .gt. 1.d0) wn1 = 1.d0
-
-      chemtab_smash = we0*wn0*mub_smash(ie,in) +
-     &                we1*wn0*mub_smash(ie+1,in) +
-     &                we0*wn1*mub_smash(ie,in+1) +
-     &                we1*wn1*mub_smash(ie+1,in+1)
+   20 continue
+      close(54)
+      if (a_smash.gt.0.d0) then
+        za_smash=z_smash/a_smash
+      else
+        za_smash=0.d0
+        use_nq_from_za=0.d0
+      endif
       return
       end
 c
@@ -5309,48 +5395,58 @@ c     ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
       subroutine read_smash_eos()
       implicit none
+      integer NeSmash,NnSmash,NqSmash
+      parameter (NeSmash=101,NnSmash=51,NqSmash=51)
       integer ie,inn,inq
       real*8 e,nb,nq,t,p,mub,mus,muq
-      real*8 t_smash(0:100,0:50), mub_smash(0:100,0:50),
-     &       e_smash(0:100), n_smash(0:50), dsmash(0:100,0:50)
-      real*8 emin_smash, emax_smash, nmin_smash, nmax_smash
-      common /smasheos/ t_smash,mub_smash,e_smash,n_smash,
-     &                  emin_smash,emax_smash,nmin_smash,nmax_smash
+      real*8 t_smash(0:NeSmash-1,0:NnSmash-1,0:NqSmash-1),
+     &       mub_smash(0:NeSmash-1,0:NnSmash-1,0:NqSmash-1),
+     &       e_smash(0:NeSmash-1), n_smash(0:NnSmash-1),
+     &       nq_smash(0:NqSmash-1)
+      real*8 emin_smash,emax_smash,nmin_smash,nmax_smash,
+     &       nqmin_smash,nqmax_smash
+      common /smasheos/ t_smash,mub_smash,e_smash,n_smash,nq_smash,
+     &                  emin_smash,emax_smash,nmin_smash,nmax_smash,
+     &                  nqmin_smash,nqmax_smash
 
-      do inn=0,50
+      do inq=0,NqSmash-1
+        nq_smash(inq)=0.d0
+      enddo
+      do inn=0,NnSmash-1
         n_smash(inn)=0.d0
-        do ie=0,100
-          t_smash(ie,inn)=0.d0
-          mub_smash(ie,inn)=0.d0
-          dsmash(ie,inn)=1.d30
+        do ie=0,NeSmash-1
+          do inq=0,NqSmash-1
+            t_smash(ie,inn,inq)=0.d0
+            mub_smash(ie,inn,inq)=0.d0
+          enddo
         enddo
       enddo
-      do ie=0,100
+      do ie=0,NeSmash-1
         e_smash(ie)=0.d0
       enddo
 
       open(unit=53,file='../eos/hadgas_eos_SMASH.dat')
       read(53,*)
-      do inn=0,50
-        do ie=0,100
-          do inq=0,50
+      do inn=0,NnSmash-1
+        do ie=0,NeSmash-1
+          do inq=0,NqSmash-1
             read(53,*) e,nb,nq,t,p,mub,mus,muq
-            if (dabs(nq).lt.dsmash(ie,inn)) then
-              dsmash(ie,inn)=dabs(nq)
-              e_smash(ie)=e*1000.d0
-              n_smash(inn)=nb
-              t_smash(ie,inn)=t*1000.d0
-              mub_smash(ie,inn)=mub*1000.d0
-            endif
+            e_smash(ie)=e*1000.d0
+            n_smash(inn)=nb
+            nq_smash(inq)=nq
+            t_smash(ie,inn,inq)=t*1000.d0
+            mub_smash(ie,inn,inq)=mub*1000.d0
           enddo
         enddo
       enddo
       close(53)
 
       emin_smash=e_smash(0)
-      emax_smash=e_smash(100)
+      emax_smash=e_smash(NeSmash-1)
       nmin_smash=n_smash(0)
-      nmax_smash=n_smash(50)
+      nmax_smash=n_smash(NnSmash-1)
+      nqmin_smash=nq_smash(0)
+      nqmax_smash=nq_smash(NqSmash-1)
       return
       end
 c
@@ -6935,14 +7031,16 @@ c      3 +xmomdenslfpos(i,j-1,k-1)+xmomdenslfpos(i-1,j-1,k-1))/8.
 
       z=enerdensrfpost(i,j,k)
       az=bardensrfpost(i,j,k)
+      xqpost=0.d0
+      if (use_nq_from_za.ne.0.d0) xqpost=za_smash*az
 
       call eqsqcd3(az,z)
 
       presspos(i,j,k) = pq
       temppos(i,j,k)  = temptab_smash(enerdensrfpost(i,j,k),
-     1 bardensrfpost(i,j,k))
+     1 bardensrfpost(i,j,k),xqpost)
       xmubpos(i,j,k)  = chemtab_smash(enerdensrfpost(i,j,k),
-     1 bardensrfpost(i,j,k))
+     1 bardensrfpost(i,j,k),xqpost)
 
 c      ---------------------------- PRE
 
@@ -7095,14 +7193,16 @@ c      3 +xmomdenslfpre(i,j-1,k-1)+xmomdenslfpre(i-1,j-1,k-1))/8.
 
       z=enerdensrfprev(i,j,k)
       az=bardensrfprev(i,j,k)
+      xqpre=0.d0
+      if (use_nq_from_za.ne.0.d0) xqpre=za_smash*az
 
       call eqsqcd3(az,z)
 c     añadir common
       presspre(i,j,k) = pq
       temppre(i,j,k)  = temptab_smash(enerdensrfprev(i,j,k),
-     1 bardensrfprev(i,j,k))
+     1 bardensrfprev(i,j,k),xqpre)
       xmubpre(i,j,k)  = chemtab_smash(enerdensrfprev(i,j,k),
-     1 bardensrfprev(i,j,k))
+     1 bardensrfprev(i,j,k),xqpre)
 
  1350 continue
  1360 continue

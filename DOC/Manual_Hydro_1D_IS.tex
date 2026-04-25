@@ -183,6 +183,24 @@ inside \texttt{readinput}. The file format is:
 The code converts GeV-based input fields to MeV-based internal fields
 for the evolution pipeline.
 
+\subsection{\texttt{input/smash\_fo.cfg}}
+Freeze-out hadronic-interface controls for SMASH are read from
+\texttt{../input/smash\_fo.cfg} by \texttt{read\_smash\_fo\_cfg}.
+Supported keys are:
+\begin{itemize}
+\item \texttt{use\_nq\_from\_za} (\texttt{0} or \texttt{1});
+\item \texttt{Z} (projectile/target charge number used in the ratio);
+\item \texttt{A} (projectile/target mass number used in the ratio).
+\end{itemize}
+Operational behavior:
+\begin{itemize}
+\item if \texttt{use\_nq\_from\_za=0}: SMASH lookup uses \texttt{nQ=0};
+\item if \texttt{use\_nq\_from\_za=1}: SMASH lookup uses
+      \texttt{nQ=(Z/A)*nB}.
+\end{itemize}
+If the file is missing, defaults are applied
+(\texttt{use\_nq\_from\_za=0}, \texttt{Z=0}, \texttt{A=1}).
+
 \section{High-Level Execution Flow}
 \subsection{Initialization phase}
 \begin{enumerate}
@@ -318,6 +336,8 @@ neighbors. The classification affects how reconstruction is performed in
 \section{Equation of State (EoS)}
 \begin{itemize}
 \item \texttt{read\_chiral\_eos} loads chiral-EoS tables.
+\item \texttt{read\_smash\_eos} loads the 3D SMASH hadron table
+      in \texttt{(e,nB,nQ)} for freeze-out thermal output.
 \item \texttt{eqsqcd3} is used repeatedly to obtain pressure and thermal
       quantities from energy and baryon density.
 \item The code contains legacy comments for bag-model forms; in the current
@@ -364,6 +384,25 @@ Given rest-frame inputs \texttt{(e,n)}, \texttt{eqsqcd3} evaluates:
 \end{itemize}
 For \texttt{n<=0}, the routine returns
 \texttt{p=T=mu\_B=s=0}.
+
+\subsection{SMASH lookup used for freeze-out output}
+The values written to \texttt{freezout.dat} for hadronic sampling use
+SMASH-table lookups:
+\begin{itemize}
+\item \texttt{temptab\_smash(e,nB,nQ)} for \texttt{T};
+\item \texttt{chemtab\_smash(e,nB,nQ)} for \texttt{mu\_B}.
+\end{itemize}
+The table is read from \texttt{../eos/hadgas\_eos\_SMASH.dat} as a full
+3D grid in \texttt{(e,nB,nQ)}.
+
+Interpolation and out-of-range handling follow vHLLE-style behavior:
+\begin{itemize}
+\item trilinear interpolation in \texttt{(e,nB,nQ)};
+\item index clamping to the valid edge cell in each dimension;
+\item if \texttt{e<=0}: \texttt{T=0}, \texttt{mu\_B=0};
+\item if \texttt{0<e<e\_min}: \texttt{T} is scaled linearly from the first
+      energy layer, while \texttt{mu\_B=0}.
+\end{itemize}
 
 \subsection{Tabulated EoS ranges and fallback behavior}
 The interpolation functions (\texttt{presstab}, \texttt{temptab},
@@ -418,6 +457,8 @@ A minimal run checklist is:
 \begin{enumerate}
 \item place \texttt{inhydro} in \texttt{input/};
 \item provide \texttt{fort.100} in \texttt{input/};
+\item provide \texttt{smash\_fo.cfg} in \texttt{input/} if SMASH
+      freeze-out charge handling needs custom \texttt{Z/A};
 \item ensure \texttt{kslab=8} in \texttt{inhydro};
 \item run executable from a directory where relative paths
       \texttt{../input/*} are valid.

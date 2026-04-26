@@ -4564,9 +4564,9 @@ c     :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
      2 totbarcornelius
 
 
-      write (734,*) ncyc*dtconv,rnegene,posene,enetot,
-     1 totenercornelius,rnegbflow,posbflow,bardenstot,
-     2 totbarcornelius
+      write (734,*) 'CYCLE',ncyc,ncyc*dtconv,enetot,pxtot,pytot,pztot,
+     1 bardenstot,totenercornelius,totpxcornelius,totpycornelius,
+     2 totpzcornelius,totbarcornelius,rnegene,posene,rnegbflow,posbflow
 
       if (IAdaptiveFO.ne.0.and.ncyc.ge.NMinFOCheck) then
       if (dabs(enetot).gt.EPSFOE.or.dabs(bardenstot).gt.EPSFOB.or.
@@ -9261,6 +9261,7 @@ c
      3 kbarmx, modcyc, ioptos4
 c
       call system('mkdir -p output')
+      call system('rm -f output/fo_flux_summary.dat')
       open (unit=156,file='output/fort.6',status='unknown')
       open (unit=118,file='output/fort_118.dat',status='unknown')
       open (unit=333,file='output/fort.333',status='unknown')
@@ -9272,6 +9273,9 @@ c
       open (unit=339,file='output/fort.339',status='unknown')
       open (unit=889,file='output/fort.889',status='unknown')
       open (unit=949,file='output/freezout.dat',status='unknown')
+      open (unit=734,file='output/fo_flux_summary.dat',status='unknown')
+      write(734,*) '# tag ncyc t_fm cycP0 cycPx cycPy cycPz cycB',
+     1 ' accP0 accPx accPy accPz accB Eneg Epos Bneg Bpos'
       return
    30 continue
       stop 1030

@@ -3,3 +3,17 @@
 *.10
 output
 build
+
+# External packages/builds
+smash/
+smash-hadron-sampler/
+sampler/
+pythia*/
+
+# Compressed archives for external packages
+smash*.zip
+smash*.tar
+sampler*.zip
+sampler*.tar
+pythia*.zip
+pythia*.tar
